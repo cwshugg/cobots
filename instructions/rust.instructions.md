@@ -1,4 +1,5 @@
 ---
+name: "rust"
 description: "Rust programming language coding conventions and best practices"
 applyTo: "**/*.rs"
 ---
