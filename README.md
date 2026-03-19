@@ -11,7 +11,11 @@ Instructions to create:
 
 Agents to create:
 
-* **Scrutinizer:** Sole purpose is to argue why existing design/implementation is not good
+* (DONE) **Architect:** Sole purpose is to create a design document for the project (writes *zero* code)
+* (DONE) **Coder:** Sole purpose is to to write code and tests. The coder implements the design plan
+* (DONE) **Scrutinizer:** Sole purpose is to argue why existing design/implementation is not good
+* (DONE) **Documenter:** Sole purpose is to examine code and write documentation
+* **Security Expert:** Works with the architect and coder to ensure security is upheld in system design and implementation
 * **Planner:** Sole purpose is to come up with a plan of operation for all the other bots to follow.
     * The planner should set up a list of steps to carry out:
         * *Interview* - A bot interviews the human to get clarifying details
@@ -23,9 +27,6 @@ Agents to create:
         3. Have the architect, the basher, etc., discuss and refine the design
         4. Interview the human; human reviews design and makes changes
         5. ...
-* **Architect:** Sole purpose is to create a design document for the project (writes *zero* code)
-* **Coder:** Sole purpose is to to write code and tests. The coder implements the design plan
-* **Documenter:** Sole purpose is to examine code and write documentation
 
 NOTE - I want each of these agents to always output their intermediate discussions/results in a common datetime format: `YYYY-MM-DD_HH-MM-SS_basher_report.md`. This should be written out in a `.instructions.md` file.
 

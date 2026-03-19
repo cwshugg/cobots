@@ -13,6 +13,11 @@ A written report should be produced each time a member of the [**Council of Craf
 A report should describe the process that occurred, and the resulting information that was agreed upon or written.
 The goal of these reports is to give the human progress updates on the Council's progress on a project.
 
+## Report Location
+
+Please create all report files underneath the `.council/` directory at the root of the project's file tree.
+If the folder doesn't exist, please create it.
+
 ## Report Formatting
 
 Please name the reports using this format: `YYYY-MM-DD_HH-MM-SS_report_name.md`.
