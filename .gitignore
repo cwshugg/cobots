@@ -11,4 +11,6 @@ __pycache__/
 
 # Cobots artifacts
 .cobots/
+cobots-config.yaml
+cobots-config.yml
 
