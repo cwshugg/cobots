@@ -78,3 +78,30 @@ def resolve_working_dir() -> str:
     the base directory determined by `resolve_base_dir`.
     """
     return os.path.join(resolve_base_dir(), WORKING_DIR_NAME)
+
+
+def resolve_config_path() -> str:
+    """Resolves the absolute path to the cobots config file.
+
+    Returns the path to `CONFIG_FILE_NAME` inside the base directory
+    determined by `resolve_base_dir`. The file may or may not exist.
+    """
+    existing = find_config_dir(os.getcwd())
+    if existing is not None:
+        return os.path.join(existing, CONFIG_FILE_NAME)
+    return os.path.join(resolve_base_dir(), CONFIG_FILE_NAME)
+
+
+def load_config() -> "CobotsConfig":
+    """Loads the cobots configuration from disk, or returns defaults.
+
+    Attempts to find and load `CONFIG_FILE_NAME` by walking up the directory
+    tree. If no config file is found, returns a `CobotsConfig` with default
+    values.
+    """
+    from config.base.config import CobotsConfig
+
+    config_dir = find_config_dir(os.getcwd())
+    if config_dir is not None:
+        return CobotsConfig.from_file(os.path.join(config_dir, CONFIG_FILE_NAME))
+    return CobotsConfig()

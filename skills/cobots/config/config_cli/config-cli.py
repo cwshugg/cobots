@@ -17,16 +17,7 @@ if _SKILLS_COBOTS_DIR not in sys.path:
     sys.path.insert(0, _SKILLS_COBOTS_DIR)
 
 from config.base.config import CobotsConfig
-from config.base.constants import CONFIG_FILE_NAME
-from config.base.working_dir import find_config_dir, resolve_base_dir
-
-
-def resolve_config_path() -> str:
-    """Resolves the absolute path where the config file lives (or should live)."""
-    existing = find_config_dir(os.getcwd())
-    if existing is not None:
-        return os.path.join(existing, CONFIG_FILE_NAME)
-    return os.path.join(resolve_base_dir(), CONFIG_FILE_NAME)
+from config.base.working_dir import resolve_config_path
 
 
 def main() -> int:
