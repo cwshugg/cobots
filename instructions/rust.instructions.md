@@ -15,7 +15,7 @@ I may make edits to it over time, but the original can be found above.
 
 # Rust Coding Conventions and Best Practices
 
-Follow idiomatic Rust practices and community standards when writing Rust code. 
+Follow idiomatic Rust practices and community standards when writing Rust code.
 
 These instructions are based on:
 

@@ -10,12 +10,19 @@ This file describes a collection of best practices to follow when writing code.
 
 ## Code Quality and Structure
 
+### General Principles
+
+* Readability counts.
+* Explicit is better than implicit.
+* Simple is better than complex.
+* Code is read more often than it’s written.
+
 ### Reuse Code
 
 Do you see the same piece(s) of identical (or very similar) code being copy-pasted or repeated?
 If so, the code should, in almost every case, be consolidated into a helper function or macro (function is preferred in most cases).
 
-### Use If-Return Structure
+### Use If-Return Structure ("Fail Fast")
 
 When possible, make sure the author uses a code structure similar to this to handle error cases or situations where a function can be broken out of early:
 
@@ -40,6 +47,10 @@ TODO - Add more code structure/quality advice!
 ## Code Testing
 
 Ensure that all new or modified features have an appropriate unit test.
+
+## Warnings & Errors
+
+When building code, please treat all warnings and errors as signals, not noise.
 
 ## Comments and In-Code Documentation
 
@@ -71,4 +82,10 @@ Please comment the code following these guidelines:
     * If semantic errors are found, please correct them.
 * A few examples:
     * In Rust, `cargo clippy` is typically used to format code.
+
+## Security
+
+* Never hardcode secrets; use environment variables or secure stores.
+* Validate all external input.
+* Keep dependencies up to date.
 
