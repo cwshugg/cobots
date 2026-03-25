@@ -3,3 +3,12 @@
 *.swo
 *.swn
 
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Cobots artifacts
+.cobots/
+
