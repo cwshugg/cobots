@@ -16,6 +16,10 @@ _SKILLS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 if _SKILLS_DIR not in sys.path:
     sys.path.insert(0, _SKILLS_DIR)
 
+# Activate the shared virtual environment so dependencies are available.
+from venv.venv import activate_venv
+activate_venv()
+
 from cobots_lib.workspace.config import CobotsConfig
 from cobots_lib.workspace.constants import REPORTS_DIR_NAME, TASKS_DIR_NAME
 from cobots_lib.workspace.working_dir import resolve_config_path, resolve_working_dir

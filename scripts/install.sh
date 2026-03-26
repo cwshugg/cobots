@@ -109,6 +109,7 @@ function __install_skills()
         \( \
             -name "*SKILL*.md" -or \
             -name "template.*.md" -or \
+            -name "requirements.txt" -or \
             -name "*.py" \
         \) \
         -print0 \
@@ -230,6 +231,18 @@ function __main()
     if [ ${retval} -ne 0 ]; then
         __log_error "Failed to install instructions."
         return ${retval}
+    fi
+
+    # Set up the Python virtual environment for skills.
+    local setup_venv="${SCRIPT_DIR}/setup-venv.sh"
+    if [ -f "${setup_venv}" ]; then
+        __log_info "Setting up Python virtual environment..."
+        bash "${setup_venv}" --install-path "${install_path}"
+        local retval=$?
+        if [ ${retval} -ne 0 ]; then
+            __log_error "Failed to set up virtual environment."
+            return ${retval}
+        fi
     fi
 
     return ${R_SUCCESS}

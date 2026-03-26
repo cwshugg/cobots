@@ -116,6 +116,7 @@ function __install_skills {
         Where-Object {
             $_.Name -like "*SKILL*.md" -or
             $_.Name -like "template.*.md" -or
+            $_.Name -eq "requirements.txt" -or
             $_.Extension -eq ".py"
         }
 
@@ -233,6 +234,17 @@ function __main {
     if ($result -ne $script:R_SUCCESS) {
         __log_error "Failed to install instructions."
         return $result
+    }
+
+    # Set up the Python virtual environment for skills.
+    $setup_venv = Join-Path $script:ScriptDir "setup-venv.ps1"
+    if (Test-Path $setup_venv) {
+        __log_info "Setting up Python virtual environment..."
+        & powershell -File $setup_venv -i $target_path
+        if ($LASTEXITCODE -ne 0) {
+            __log_error "Failed to set up virtual environment."
+            return $script:R_FAILURE
+        }
     }
 
     return $script:R_SUCCESS
