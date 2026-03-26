@@ -96,7 +96,7 @@ function __install_skills()
         skill_dst="${skills_dst}/${skill_rel}"
         install -D "${skill_file}" "${skill_dst}"
 
-        __log_info "Installed skill \"${skill_rel}\" to: ${skill_dst}"
+        __log_info "Installed skill file \"${skill_rel}\" to: ${skill_dst}"
 
         # Only increase the skill count if we're installing a `SKILL.md` file
         # during this iteration; this keeps the skill count accurate.
