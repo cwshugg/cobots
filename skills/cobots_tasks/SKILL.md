@@ -1,5 +1,5 @@
 ---
-name: tasks-cli
+name: cobots-tasks-cli
 description: CLI for creating, listing, inspecting, and updating cobots tasks.
 ---
 

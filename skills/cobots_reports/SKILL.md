@@ -1,5 +1,5 @@
 ---
-name: reports-cli
+name: cobots-reports-cli
 description: CLI for creating cobots reports from a template.
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: workspace-cli
+name: cobots-workspace-cli
 description: CLI for initializing and managing the cobots workspace.
 ---
 
