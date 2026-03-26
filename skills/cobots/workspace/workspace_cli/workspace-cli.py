@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-config-cli.py - CLI for managing the cobots config file.
+workspace-cli.py - CLI for managing the cobots workspace.
 
-Provides commands to show the resolved config file path and to create a
-default `cobots-config.yaml` if one does not already exist.
+Provides commands to initialize the workspace, and to show resolved paths
+for the workspace directory and config file.
 """
 
 import argparse
@@ -11,19 +11,20 @@ import os
 import sys
 
 # Resolve the `skills/cobots/` directory and add it to the module search path
-# so skills can import shared packages (e.g. `config.base.constants`).
+# so skills can import shared packages (e.g. `workspace.base.constants`).
 _SKILLS_COBOTS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if _SKILLS_COBOTS_DIR not in sys.path:
     sys.path.insert(0, _SKILLS_COBOTS_DIR)
 
-from config.base.config import CobotsConfig
-from config.base.working_dir import resolve_config_path, resolve_working_dir
+from workspace.base.config import CobotsConfig
+from workspace.base.constants import REPORTS_DIR_NAME, TASKS_DIR_NAME
+from workspace.base.working_dir import resolve_config_path, resolve_working_dir
 
 
 def main() -> int:
-    """Parses arguments and manages the cobots config and working directory."""
+    """Parses arguments and manages the cobots workspace."""
     parser = argparse.ArgumentParser(
-        description="CLI for managing the cobots config file and working directory."
+        description="CLI for managing the cobots workspace."
     )
     parser.add_argument(
         "--show-path",
@@ -38,7 +39,7 @@ def main() -> int:
     parser.add_argument(
         "--init",
         action="store_true",
-        help="Create a default config file if one does not already exist.",
+        help="Initialize the full workspace (.cobots/, config, tasks/, reports/).",
     )
 
     args = parser.parse_args()
@@ -58,12 +59,29 @@ def main() -> int:
     if args.init:
         working_dir = resolve_working_dir()
         config_path = resolve_config_path()
-        if os.path.isfile(config_path):
-            print(f"Already exists: {config_path}")
-        else:
-            os.makedirs(working_dir, exist_ok=True)
+        tasks_dir = os.path.join(working_dir, TASKS_DIR_NAME)
+        reports_dir = os.path.join(working_dir, REPORTS_DIR_NAME)
+
+        already_exists = os.path.isfile(config_path)
+
+        # 1. Create the workspace directory.
+        os.makedirs(working_dir, exist_ok=True)
+
+        # 2. Create the config file.
+        if not already_exists:
             CobotsConfig().write_file(config_path)
-            print(f"Created: {config_path}")
+
+        # 3. Create the tasks directory.
+        os.makedirs(tasks_dir, exist_ok=True)
+
+        # 4. Create the reports directory.
+        os.makedirs(reports_dir, exist_ok=True)
+
+        if already_exists:
+            print(f"Already initialized: {working_dir}")
+        else:
+            print(f"Initialized workspace: {working_dir}")
+
         return 0
 
     return 0

@@ -15,13 +15,13 @@ import sys
 from datetime import datetime, timezone
 
 # Resolve the `skills/cobots/` directory and add it to the module search path
-# so skills can import shared packages (e.g. `config.base.constants`).
+# so skills can import shared packages (e.g. `workspace.base.constants`).
 _SKILLS_COBOTS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if _SKILLS_COBOTS_DIR not in sys.path:
     sys.path.insert(0, _SKILLS_COBOTS_DIR)
 
-from config.base.constants import TASK_FILE_SUFFIX, TASKS_DIR_NAME
-from config.base.working_dir import load_config, resolve_working_dir
+from workspace.base.constants import TASK_FILE_SUFFIX, TASKS_DIR_NAME
+from workspace.base.working_dir import load_config, resolve_working_dir
 
 # Path to the task template, relative to this skill's parent directory.
 TASK_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "..", "template.task.md")

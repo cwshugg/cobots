@@ -8,7 +8,7 @@ and loaded back from YAML.
 
 import yaml
 
-from config.base.constants import CONFIG_FILE_NAME
+from workspace.base.constants import CONFIG_FILE_NAME
 
 
 class CobotsConfig:
@@ -19,7 +19,7 @@ class CobotsConfig:
     """
 
     # Default task status values used when no config file overrides them.
-    DEFAULT_TASK_STATUS_VALUES = ["pending", "underway", "done"]
+    DEFAULT_TASK_STATUS_VALUES = ["pending", "underway", "done", "abandoned"]
 
     # Default length (in hex characters) for randomly generated task IDs.
     DEFAULT_TASK_ID_LENGTH = 16

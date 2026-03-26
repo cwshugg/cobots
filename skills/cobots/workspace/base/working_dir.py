@@ -10,23 +10,30 @@ the final paths. The config file lives inside the working directory
 import os
 import subprocess
 
-from config.base.constants import CONFIG_FILE_NAME, WORKING_DIR_NAME
+from workspace.base.constants import CONFIG_FILE_NAME, WORKING_DIR_NAME
 
 
 def find_working_dir(start_dir: str) -> str | None:
     """Walks up from `start_dir` looking for an existing `WORKING_DIR_NAME`
     directory.
 
+    The search is bounded by the git repository root (if inside one) so that
+    a `.cobots/` in a parent directory outside the repo is not matched.
     Returns the absolute path to the first `WORKING_DIR_NAME` directory
-    found, whether or not it contains a config file. Returns ``None`` if
-    the file system root is reached without finding one.
+    found, or ``None`` if none is found within the boundary.
     """
+    git_root = get_git_root()
+    boundary = os.path.abspath(git_root) if git_root is not None else None
+
     current = os.path.abspath(start_dir)
     while True:
         candidate = os.path.join(current, WORKING_DIR_NAME)
         if os.path.isdir(candidate):
             return candidate
 
+        # Stop if we've reached the boundary (git root) or file system root.
+        if boundary is not None and current == boundary:
+            return None
         parent = os.path.dirname(current)
         if parent == current:
             return None
@@ -91,7 +98,7 @@ def load_config() -> "CobotsConfig":
     found and contains a config file, loads it. Otherwise returns a
     `CobotsConfig` with default values.
     """
-    from config.base.config import CobotsConfig
+    from workspace.base.config import CobotsConfig
 
     config_path = resolve_config_path()
     if os.path.isfile(config_path):

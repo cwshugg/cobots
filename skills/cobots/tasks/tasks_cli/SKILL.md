@@ -1,3 +1,8 @@
+---
+name: tasks-cli
+description: CLI for creating, listing, inspecting, and updating cobots tasks.
+---
+
 # tasks-cli
 
 A CLI skill for managing cobots tasks.
