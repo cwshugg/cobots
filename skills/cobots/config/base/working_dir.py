@@ -1,10 +1,10 @@
 """
 working_dir.py - Shared logic for resolving the cobots working directory.
 
-Provides functions to locate the cobots config file by walking up the
-directory tree, detect the git repository root, and resolve the final
-working directory path. Used by skills that need to know where agents
-should read/write files.
+Provides functions to locate the cobots working directory and config file by
+walking up the directory tree, detect the git repository root, and resolve
+the final paths. The config file lives inside the working directory
+(e.g. `.cobots/cobots-config.yaml`).
 """
 
 import os
@@ -13,17 +13,19 @@ import subprocess
 from config.base.constants import CONFIG_FILE_NAME, WORKING_DIR_NAME
 
 
-def find_config_dir(start_dir: str) -> str | None:
-    """Walks up from `start_dir` looking for `CONFIG_FILE_NAME`.
+def find_working_dir(start_dir: str) -> str | None:
+    """Walks up from `start_dir` looking for an existing `WORKING_DIR_NAME`
+    directory.
 
-    Returns the directory containing the config file, or ``None`` if the
-    file system root is reached without finding one.
+    Returns the absolute path to the first `WORKING_DIR_NAME` directory
+    found, whether or not it contains a config file. Returns ``None`` if
+    the file system root is reached without finding one.
     """
     current = os.path.abspath(start_dir)
     while True:
-        candidate = os.path.join(current, CONFIG_FILE_NAME)
-        if os.path.isfile(candidate):
-            return current
+        candidate = os.path.join(current, WORKING_DIR_NAME)
+        if os.path.isdir(candidate):
+            return candidate
 
         parent = os.path.dirname(current)
         if parent == current:
@@ -47,61 +49,51 @@ def get_git_root() -> str | None:
         return None
 
 
-def resolve_base_dir() -> str:
-    """Resolves the base directory where cobots files should live.
-
-    Applies the following strategy in order:
-    1. Look for `CONFIG_FILE_NAME` by walking up the directory tree.
-    2. Fall back to the git repository root.
-    3. Fall back to the current working directory.
-
-    Returns the absolute path to the directory that should contain both
-    `CONFIG_FILE_NAME` and `WORKING_DIR_NAME`.
-    """
-    cwd = os.getcwd()
-
-    config_dir = find_config_dir(cwd)
-    if config_dir is not None:
-        return config_dir
-
-    git_root = get_git_root()
-    if git_root is not None:
-        return git_root
-
-    return cwd
-
-
 def resolve_working_dir() -> str:
     """Resolves the cobots working directory path.
 
-    Returns the absolute path to the `WORKING_DIR_NAME` directory inside
-    the base directory determined by `resolve_base_dir`.
+    Applies the following strategy in order:
+    1. Walk up looking for an existing `WORKING_DIR_NAME` containing
+       `CONFIG_FILE_NAME`.
+    2. Fall back to `WORKING_DIR_NAME` at the git repository root.
+    3. Fall back to `WORKING_DIR_NAME` in the current working directory.
+
+    Returns the absolute path to the working directory. The directory may
+    or may not exist yet.
     """
-    return os.path.join(resolve_base_dir(), WORKING_DIR_NAME)
+    cwd = os.getcwd()
+
+    existing = find_working_dir(cwd)
+    if existing is not None:
+        return existing
+
+    git_root = get_git_root()
+    if git_root is not None:
+        return os.path.join(git_root, WORKING_DIR_NAME)
+
+    return os.path.join(cwd, WORKING_DIR_NAME)
 
 
 def resolve_config_path() -> str:
     """Resolves the absolute path to the cobots config file.
 
-    Returns the path to `CONFIG_FILE_NAME` inside the base directory
-    determined by `resolve_base_dir`. The file may or may not exist.
+    The config file lives inside the working directory. Returns the path
+    to `CONFIG_FILE_NAME` inside `resolve_working_dir()`. The file may or
+    may not exist yet.
     """
-    existing = find_config_dir(os.getcwd())
-    if existing is not None:
-        return os.path.join(existing, CONFIG_FILE_NAME)
-    return os.path.join(resolve_base_dir(), CONFIG_FILE_NAME)
+    return os.path.join(resolve_working_dir(), CONFIG_FILE_NAME)
 
 
 def load_config() -> "CobotsConfig":
     """Loads the cobots configuration from disk, or returns defaults.
 
-    Attempts to find and load `CONFIG_FILE_NAME` by walking up the directory
-    tree. If no config file is found, returns a `CobotsConfig` with default
-    values.
+    Walks up the directory tree looking for a working directory. If one is
+    found and contains a config file, loads it. Otherwise returns a
+    `CobotsConfig` with default values.
     """
     from config.base.config import CobotsConfig
 
-    config_dir = find_config_dir(os.getcwd())
-    if config_dir is not None:
-        return CobotsConfig.from_file(os.path.join(config_dir, CONFIG_FILE_NAME))
+    config_path = resolve_config_path()
+    if os.path.isfile(config_path):
+        return CobotsConfig.from_file(config_path)
     return CobotsConfig()

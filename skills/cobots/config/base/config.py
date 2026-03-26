@@ -19,7 +19,7 @@ class CobotsConfig:
     """
 
     # Default task status values used when no config file overrides them.
-    DEFAULT_TASK_STATUS_VALUES = ["untouched", "underway", "blocked", "done"]
+    DEFAULT_TASK_STATUS_VALUES = ["pending", "underway", "done"]
 
     # Default length (in hex characters) for randomly generated task IDs.
     DEFAULT_TASK_ID_LENGTH = 16

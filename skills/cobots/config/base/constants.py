@@ -13,3 +13,6 @@ WORKING_DIR_NAME = ".cobots"
 
 # The subdirectory under the working directory where task files are stored.
 TASKS_DIR_NAME = "tasks"
+
+# The file suffix for task files.
+TASK_FILE_SUFFIX = ".task.md"
