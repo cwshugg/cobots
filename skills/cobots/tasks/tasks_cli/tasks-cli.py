@@ -113,6 +113,11 @@ def task_id_from_path(path: str) -> str:
     return os.path.basename(path).removesuffix(TASK_FILE_SUFFIX)
 
 
+def sanitize_author(author: str) -> str:
+    """Sanitizes an author name: strip, lowercase, whitespace to underscores."""
+    return re.sub(r"\s+", "_", author.strip().lower())
+
+
 def parse_task_file(path: str) -> tuple[dict, str]:
     """Parses a task file into its YAML frontmatter dict and body string.
 
@@ -245,7 +250,7 @@ def cmd_create(args: argparse.Namespace, config) -> int:
         task_id=task_id,
         title=args.title,
         status=args.status,
-        author=args.author,
+        author=sanitize_author(args.author),
         owner=args.owner or "",
         linked_tasks=linked_tasks,
         description=description,
@@ -318,7 +323,7 @@ def cmd_add_discussion(args: argparse.Namespace, config) -> int:
 
     # Build the discussion header.
     now_utc = datetime.now(timezone.utc).strftime(DISCUSSION_DATETIME_FORMAT)
-    header = f"## {now_utc} - {args.author}"
+    header = f"## {now_utc} - {sanitize_author(args.author)}"
 
     # Read the existing file.
     with open(task_path, "r", encoding="utf-8") as fh:

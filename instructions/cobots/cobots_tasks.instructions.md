@@ -21,6 +21,7 @@ Please follow these rules
 ## Managing Tasks
 
 Please use the cobots tasks CLI skill to create, list, view, update, link, etc., tasks.
+If you are creating the task, please specify your name as the author.
 
 ## Rules of Task Tracking
 

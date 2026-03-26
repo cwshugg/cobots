@@ -26,3 +26,5 @@ Use the workspace CLI to initialize the cobots' working directory if it hasn't a
 Please use the cobots report CLI skill to create report files.
 The CLI tool will handle creating the file and formatting it properly; you need only generate markdown and provide it (plus other command-line parameters) through the CLI.
 
+When creating a report, please specify your name as the author.
+

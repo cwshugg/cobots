@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-reports-cli.py - CLI for creating cobots reports.
+reports-cli.py - CLI for creating and listing cobots reports.
 
-Creates a new report from `template.report.md`, fills in the frontmatter
-with the provided arguments, reads the report body from STDIN, and saves
-the result under `.cobots/reports/`.
+Provides subcommands to create reports from `template.report.md` and to
+list existing reports stored under `.cobots/reports/`.
 """
 
 import argparse
+import glob
 import os
 import re
 import sys
@@ -28,10 +28,44 @@ REPORT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "..", "template.r
 # Placeholder strings inside the report template.
 PH_REPORT_TITLE = "REPLACE_WITH_REPORT_TITLE"
 PH_REPORT_AUTHOR = "REPLACE_WITH_REPORT_AUTHOR"
+PH_REPORT_TIMESTAMP = "REPLACE_WITH_CREATION_DATETIME"
 PH_REPORT_CONTENTS = "REPLACE_WITH_REPORT_CONTENTS"
 
 # Datetime format used in report file names.
-REPORT_DATETIME_FORMAT = "%Y-%m-%d_%H-%M-%S"
+REPORT_FILENAME_DATETIME_FORMAT = "%Y-%m-%d_%H-%M-%S"
+
+# Datetime format used in the frontmatter timestamp field.
+REPORT_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def get_reports_dir() -> str:
+    """Returns the absolute path to the reports directory."""
+    return os.path.join(resolve_working_dir(), REPORTS_DIR_NAME)
+
+
+def list_report_files() -> list[str]:
+    """Returns sorted absolute paths to all report files in the reports directory."""
+    pattern = os.path.join(get_reports_dir(), f"*{REPORT_FILE_SUFFIX}")
+    return sorted(glob.glob(pattern))
+
+
+def parse_report_frontmatter(path: str) -> dict:
+    """Parses a report file and returns its YAML frontmatter as a dict."""
+    import yaml
+
+    with open(path, "r", encoding="utf-8") as fh:
+        content = fh.read()
+
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        return {}
+
+    fm = yaml.safe_load(parts[1])
+    return fm if fm is not None else {}
 
 
 def slugify_title(title: str) -> str:
@@ -42,14 +76,30 @@ def slugify_title(title: str) -> str:
     return slug
 
 
-def render_template(template: str, title: str, author: str, contents: str) -> str:
+def sanitize_author(author: str) -> str:
+    """Sanitizes an author name: strip, lowercase, whitespace to underscores."""
+    return re.sub(r"\s+", "_", author.strip().lower())
+
+
+def render_template(
+    template: str,
+    title: str,
+    author: str,
+    timestamp: str,
+    contents: str,
+) -> str:
     """Replaces all placeholders in the template with the given values."""
     result = template
     result = result.replace(PH_REPORT_TITLE, title)
     result = result.replace(PH_REPORT_AUTHOR, author)
+    result = result.replace(PH_REPORT_TIMESTAMP, timestamp)
     result = result.replace(PH_REPORT_CONTENTS, contents)
     return result
 
+
+# ---------------------------------------------------------------------------
+# Subcommands
+# ---------------------------------------------------------------------------
 
 def cmd_create(args: argparse.Namespace) -> int:
     """Handles the ``create`` subcommand."""
@@ -68,21 +118,26 @@ def cmd_create(args: argparse.Namespace) -> int:
     with open(template_path, "r", encoding="utf-8") as fh:
         template = fh.read()
 
+    # Capture the current UTC time for both the file name and frontmatter.
+    now_utc = datetime.now(timezone.utc)
+    timestamp = now_utc.strftime(REPORT_TIMESTAMP_FORMAT)
+
     # Render the template.
     content = render_template(
         template=template,
         title=args.title,
-        author=args.author,
+        author=sanitize_author(args.author),
+        timestamp=timestamp,
         contents=contents,
     )
 
     # Build the file name.
-    now_utc = datetime.now(timezone.utc).strftime(REPORT_DATETIME_FORMAT)
+    filename_ts = now_utc.strftime(REPORT_FILENAME_DATETIME_FORMAT)
     slug = slugify_title(args.title)
-    filename = f"{now_utc}_{slug}{REPORT_FILE_SUFFIX}"
+    filename = f"{filename_ts}_{slug}{REPORT_FILE_SUFFIX}"
 
     # Ensure the reports directory exists and write the file.
-    reports_dir = os.path.join(resolve_working_dir(), REPORTS_DIR_NAME)
+    reports_dir = get_reports_dir()
     os.makedirs(reports_dir, exist_ok=True)
 
     report_path = os.path.join(reports_dir, filename)
@@ -92,6 +147,29 @@ def cmd_create(args: argparse.Namespace) -> int:
     print(report_path)
     return 0
 
+
+def cmd_list(args: argparse.Namespace) -> int:
+    """Handles the ``list`` subcommand."""
+    report_files = list_report_files()
+    if not report_files:
+        print("No reports found.")
+        return 0
+
+    for path in report_files:
+        fm = parse_report_frontmatter(path)
+        timestamp = fm.get("timestamp", "???")
+        author = fm.get("author", "(unknown)")
+        title = fm.get("title", "(untitled)")
+        path_str = f" {path}" if args.show_path else ""
+
+        print(f"[{timestamp}] ({author}) {title}{path_str}")
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
 def main() -> int:
     """Entry point. Parses subcommands and dispatches to handlers."""
@@ -108,10 +186,21 @@ def main() -> int:
     create_parser.add_argument("--title", required=True, help="The title of the report.")
     create_parser.add_argument("--author", required=True, help="The author of the report.")
 
+    # -- list --
+    list_parser = subparsers.add_parser(
+        "list",
+        help="List all reports.",
+    )
+    list_parser.add_argument(
+        "--show-path", action="store_true",
+        help="Show the full file path for each report.",
+    )
+
     args = parser.parse_args()
 
     handlers = {
         "create": cmd_create,
+        "list": cmd_list,
     }
 
     return handlers[args.command](args)
