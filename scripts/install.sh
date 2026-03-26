@@ -70,6 +70,53 @@ function __install_agents()
     return ${R_SUCCESS}
 }
 
+# Installs skill files.
+function __install_skills()
+{
+    local install_path="$1"
+
+    # Does an skills directory not exist? If so, create it.
+    skills_dst="$(realpath "${install_path}/skills")"
+    if [ ! -d "${skills_dst}" ]; then
+        mkdir -p "${skills_dst}"
+    fi
+
+    # Make sure we have an skills source directory:
+    skills_src="${REPO_DIR}/skills"
+    if [ ! -d "${skills_src}" ]; then
+        __log_error "Skills source directory not found: ${skills_src}"
+        return ${R_FAILURE}
+    fi
+
+    # Locate all skill files and copy them into the skills directory:
+    skill_count=0
+    while IFS= read -r -d '' skill_file; do
+        skill_fname="$(basename "${skill_file}")"
+        skill_rel="${skill_file#${skills_src}/}"
+        skill_dst="${skills_dst}/${skill_rel}"
+        install -D "${skill_file}" "${skill_dst}"
+
+        __log_info "Installed skill \"${skill_rel}\" to: ${skill_dst}"
+
+        # Only increase the skill count if we're installing a `SKILL.md` file
+        # during this iteration; this keeps the skill count accurate.
+        if [[ "${skill_fname}" == *SKILL*.md ]]; then
+            skill_count=$((skill_count + 1))
+        fi
+    done < <( \
+        find "${skills_src}" \
+        -type f \
+        \( \
+            -name "*SKILL*.md" -or \
+            -name "*.py" \
+        \) \
+        -print0 \
+    )
+
+    __log_info "Installed ${skill_count} skills to: ${skills_dst}"
+    return ${R_SUCCESS}
+}
+
 # Installs instruction files.
 function __install_instructions()
 {
@@ -165,6 +212,14 @@ function __main()
     local retval=$?
     if [ ${retval} -ne 0 ]; then
         __log_error "Failed to install agents."
+        return ${retval}
+    fi
+
+    # Install skills
+    __install_skills "${install_path}"
+    local retval=$?
+    if [ ${retval} -ne 0 ]; then
+        __log_error "Failed to install skills."
         return ${retval}
     fi
 
