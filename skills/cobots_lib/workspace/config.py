@@ -8,7 +8,7 @@ and loaded back from YAML.
 
 import yaml
 
-from workspace.base.constants import CONFIG_FILE_NAME
+from cobots_lib.workspace.constants import CONFIG_FILE_NAME
 
 
 class CobotsConfig:

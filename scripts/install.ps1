@@ -87,9 +87,9 @@ function __install_agents {
     return $script:R_SUCCESS
 }
 
-# Finds all skill-related files (SKILL.md descriptors and .py implementations)
-# in the repo's `skills/` directory and copies them into the install path,
-# preserving relative directory structure.
+# Finds all skill-related files (SKILL.md descriptors, .py implementations,
+# and template.*.md templates) in the repo's `skills/` directory and copies
+# them into the install path, preserving relative directory structure.
 function __install_skills {
     param([string]$install_path)
 
@@ -115,6 +115,7 @@ function __install_skills {
     $skill_files = Get-ChildItem -Path $skills_src -Recurse -File |
         Where-Object {
             $_.Name -like "*SKILL*.md" -or
+            $_.Name -like "template.*.md" -or
             $_.Extension -eq ".py"
         }
 

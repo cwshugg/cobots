@@ -14,17 +14,17 @@ import secrets
 import sys
 from datetime import datetime, timezone
 
-# Resolve the `skills/cobots/` directory and add it to the module search path
-# so skills can import shared packages (e.g. `workspace.base.constants`).
-_SKILLS_COBOTS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
-if _SKILLS_COBOTS_DIR not in sys.path:
-    sys.path.insert(0, _SKILLS_COBOTS_DIR)
+# Resolve the `skills/` directory and add it to the module search path
+# so skills can import shared packages (e.g. `cobots_lib.workspace.constants`).
+_SKILLS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+if _SKILLS_DIR not in sys.path:
+    sys.path.insert(0, _SKILLS_DIR)
 
-from workspace.base.constants import TASK_FILE_SUFFIX, TASKS_DIR_NAME
-from workspace.base.working_dir import load_config, resolve_working_dir
+from cobots_lib.workspace.constants import TASK_FILE_SUFFIX, TASKS_DIR_NAME
+from cobots_lib.workspace.working_dir import load_config, resolve_working_dir
 
-# Path to the task template, relative to this skill's parent directory.
-TASK_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "..", "template.task.md")
+# Path to the task template, in the same directory as this script.
+TASK_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "template.task.md")
 
 # Placeholder strings inside the task template.
 PH_TASK_ID = "REPLACE_WITH_TASK_ID"

@@ -10,15 +10,15 @@ import argparse
 import os
 import sys
 
-# Resolve the `skills/cobots/` directory and add it to the module search path
-# so skills can import shared packages (e.g. `workspace.base.constants`).
-_SKILLS_COBOTS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
-if _SKILLS_COBOTS_DIR not in sys.path:
-    sys.path.insert(0, _SKILLS_COBOTS_DIR)
+# Resolve the `skills/` directory and add it to the module search path
+# so skills can import shared packages (e.g. `cobots_lib.workspace.constants`).
+_SKILLS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+if _SKILLS_DIR not in sys.path:
+    sys.path.insert(0, _SKILLS_DIR)
 
-from workspace.base.config import CobotsConfig
-from workspace.base.constants import REPORTS_DIR_NAME, TASKS_DIR_NAME
-from workspace.base.working_dir import resolve_config_path, resolve_working_dir
+from cobots_lib.workspace.config import CobotsConfig
+from cobots_lib.workspace.constants import REPORTS_DIR_NAME, TASKS_DIR_NAME
+from cobots_lib.workspace.working_dir import resolve_config_path, resolve_working_dir
 
 
 def main() -> int:
@@ -27,7 +27,7 @@ def main() -> int:
         description="CLI for managing the cobots workspace."
     )
     parser.add_argument(
-        "--show-path",
+        "--show-config-path",
         action="store_true",
         help="Print the resolved config file path without modifying anything.",
     )
@@ -44,11 +44,11 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    if not args.show_path and not args.show_working_dir_path and not args.init:
+    if not args.show_config_path and not args.show_working_dir_path and not args.init:
         parser.print_help()
         return 1
 
-    if args.show_path:
+    if args.show_config_path:
         print(resolve_config_path())
         return 0
 

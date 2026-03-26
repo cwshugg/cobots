@@ -13,17 +13,17 @@ import re
 import sys
 from datetime import datetime, timezone
 
-# Resolve the `skills/cobots/` directory and add it to the module search path
-# so skills can import shared packages (e.g. `workspace.base.constants`).
-_SKILLS_COBOTS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
-if _SKILLS_COBOTS_DIR not in sys.path:
-    sys.path.insert(0, _SKILLS_COBOTS_DIR)
+# Resolve the `skills/` directory and add it to the module search path
+# so skills can import shared packages (e.g. `cobots_lib.workspace.constants`).
+_SKILLS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+if _SKILLS_DIR not in sys.path:
+    sys.path.insert(0, _SKILLS_DIR)
 
-from workspace.base.constants import REPORTS_DIR_NAME, REPORT_FILE_SUFFIX
-from workspace.base.working_dir import resolve_working_dir
+from cobots_lib.workspace.constants import REPORTS_DIR_NAME, REPORT_FILE_SUFFIX
+from cobots_lib.workspace.working_dir import resolve_working_dir
 
-# Path to the report template, relative to this skill's parent directory.
-REPORT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "..", "template.report.md")
+# Path to the report template, in the same directory as this script.
+REPORT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "template.report.md")
 
 # Placeholder strings inside the report template.
 PH_REPORT_TITLE = "REPLACE_WITH_REPORT_TITLE"

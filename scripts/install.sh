@@ -108,6 +108,7 @@ function __install_skills()
         -type f \
         \( \
             -name "*SKILL*.md" -or \
+            -name "template.*.md" -or \
             -name "*.py" \
         \) \
         -print0 \

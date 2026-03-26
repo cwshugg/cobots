@@ -10,7 +10,7 @@ the final paths. The config file lives inside the working directory
 import os
 import subprocess
 
-from workspace.base.constants import CONFIG_FILE_NAME, WORKING_DIR_NAME
+from cobots_lib.workspace.constants import CONFIG_FILE_NAME, WORKING_DIR_NAME
 
 
 def find_working_dir(start_dir: str) -> str | None:
@@ -98,7 +98,7 @@ def load_config() -> "CobotsConfig":
     found and contains a config file, loads it. Otherwise returns a
     `CobotsConfig` with default values.
     """
-    from workspace.base.config import CobotsConfig
+    from cobots_lib.workspace.config import CobotsConfig
 
     config_path = resolve_config_path()
     if os.path.isfile(config_path):
