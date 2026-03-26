@@ -1,7 +1,7 @@
 ---
 name: "cobots_reports"
 description: "A primer on writing cobot reports"
-applyTo: ""
+applyTo: "**/*.cobots.agent.md"
 ---
 
 One of the cornerstones of the Cobots Collective is that information should be *written down* to be remembered.

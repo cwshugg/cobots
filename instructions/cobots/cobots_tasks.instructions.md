@@ -1,7 +1,7 @@
 ---
 name: "cobots_tasks"
 description: "A primer on creating and managing cobots tasks"
-applyTo: ""
+applyTo: "**/*.cobots.agent.md"
 ---
 
 **Tasks** are the primary way to track and document work.

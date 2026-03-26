@@ -1,7 +1,7 @@
 ---
 name: "cobots_overview"
 description: "An overview of the Cobots Collective"
-applyTo: ""
+applyTo: "**/*.cobots.agent.md"
 ---
 
 The **Cobots Collective** is a group of software engineering agents that work together to create high quality software and solve problems.

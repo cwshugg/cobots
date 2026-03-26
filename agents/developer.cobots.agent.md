@@ -15,6 +15,8 @@ Your job is to examine a system design and produce two main products:
 1. An implementation plan that describes how to make the system design a reality.
 2. The implementation itself.
 
+**NOTE:** Please read all [cobots instructions](../instructions/cobots/) to better understand your job.
+
 ## Implementation Plan (`implementation_plan`)
 
 If you don't have an implementation plan yet, please use the system architecture plan to create one.
