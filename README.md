@@ -17,7 +17,20 @@ The name **cobots** comes from one (or all) of these:
 
 ## The System
 
-TODO - describe agents, skills, etc.
+So far, the system of agents works like this:
+
+* [The Director](agents/director.cobots.agent.md) understands the goals of a project/problem and comes up with a high-level plan of what tasks are involved, and what other agents should complete them.
+* [The Architect](agents/architect.cobots.agent.md) creates a comprehensive design report on how a software system should be design (or how a problem should be solved).
+* [The Developer](agents/developer.cobots.agent.md) implements the architect's design.
+* [The Scrutinizer](agents/scrutinizer.cobots.agent.md) reviews the implementation (or anything else requested) and suggests improvements to be made.
+* [The Documenter](agents/documenter.cobots.agent.md) writes documentation for the project.
+
+The following skills are used by the agents to track work and report progress:
+
+* [Cobots Tasks CLI](skills/cobots_tasks/) - A small CLI tool that creates and manages `*.task.md` files under a working directory.
+    * Tasks represent individual items that need completing for the project.
+* [Cobots Reports CLI](skills/cobots_reports/) - A small CLI tool that creates `*.report.md` files under a working directory.
+    * Reports represent write-ups created by the agents, such as architecture plans, code reviews, etc.
 
 ## Resources
 
