@@ -24,7 +24,7 @@ config file, tasks, and reports. Locations are resolved using the following stra
 python workspace-cli.py --show-config-path
 
 # Print the resolved working directory path (no side effects).
-python workspace-cli.py --show-working-dir-path
+python workspace-cli.py --show-workspace-path
 
 # Initialize the full workspace.
 python workspace-cli.py --init
@@ -33,7 +33,7 @@ python workspace-cli.py --init
 ## Arguments
 
 * `--show-config-path` - Print the resolved config file path without modifying anything.
-* `--show-working-dir-path` - Print the resolved working directory path without modifying anything.
+* `--show-workspace-path` - Print the resolved working directory path without modifying anything.
 * `--init` - Initialize the full workspace: creates `.cobots/`, `cobots-config.yaml`, `tasks/`, and `reports/`.
 
 ## Examples
@@ -42,7 +42,7 @@ python workspace-cli.py --init
 $ python workspace-cli.py --show-config-path
 /home/user/my-project/.cobots/cobots-config.yaml
 
-$ python workspace-cli.py --show-working-dir-path
+$ python workspace-cli.py --show-workspace-path
 /home/user/my-project/.cobots
 
 $ python workspace-cli.py --init

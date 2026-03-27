@@ -31,12 +31,17 @@ def main() -> int:
         description="CLI for managing the cobots workspace."
     )
     parser.add_argument(
+        "--workspace-path",
+        default=None,
+        help="Explicit path to the .cobots/ workspace directory.",
+    )
+    parser.add_argument(
         "--show-config-path",
         action="store_true",
         help="Print the resolved config file path without modifying anything.",
     )
     parser.add_argument(
-        "--show-working-dir-path",
+        "--show-workspace-path",
         action="store_true",
         help="Print the resolved working directory path without modifying anything.",
     )
@@ -48,21 +53,23 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    if not args.show_config_path and not args.show_working_dir_path and not args.init:
+    if not args.show_config_path and not args.show_workspace_path and not args.init:
         parser.print_help()
         return 1
 
+    wp = args.workspace_path
+
     if args.show_config_path:
-        print(resolve_config_path())
+        print(resolve_config_path(wp))
         return 0
 
-    if args.show_working_dir_path:
-        print(resolve_working_dir())
+    if args.show_workspace_path:
+        print(resolve_working_dir(wp))
         return 0
 
     if args.init:
-        working_dir = resolve_working_dir()
-        config_path = resolve_config_path()
+        working_dir = resolve_working_dir(wp)
+        config_path = resolve_config_path(wp)
         tasks_dir = os.path.join(working_dir, TASKS_DIR_NAME)
         reports_dir = os.path.join(working_dir, REPORTS_DIR_NAME)
 

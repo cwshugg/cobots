@@ -45,6 +45,9 @@ DISCUSSION_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 # Regex pattern matching a discussion header line.
 DISCUSSION_HEADER_RE = re.compile(r"^## \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} - .+$")
 
+# Set by `main()` when `--workspace-path` is provided.
+_WORKSPACE_PATH: str | None = None
+
 
 # ---------------------------------------------------------------------------
 # Task file helpers
@@ -52,7 +55,7 @@ DISCUSSION_HEADER_RE = re.compile(r"^## \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} - .+
 
 def get_tasks_dir() -> str:
     """Returns the absolute path to the tasks directory."""
-    return os.path.join(resolve_working_dir(), TASKS_DIR_NAME)
+    return os.path.join(resolve_working_dir(_WORKSPACE_PATH), TASKS_DIR_NAME)
 
 
 def list_task_files() -> list[str]:
@@ -490,10 +493,15 @@ def cmd_remove_link(args: argparse.Namespace, config) -> int:
 
 def main() -> int:
     """Entry point. Parses subcommands and dispatches to handlers."""
-    config = load_config()
+    global _WORKSPACE_PATH
 
     parser = argparse.ArgumentParser(
         description="CLI for managing cobots tasks."
+    )
+    parser.add_argument(
+        "--workspace-path",
+        default=None,
+        help="Explicit path to the .cobots/ workspace directory.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -505,7 +513,7 @@ def main() -> int:
     create_parser.add_argument("--title", required=True, help="The title of the task.")
     create_parser.add_argument("--author", required=True, help="The creator of the task.")
     create_parser.add_argument(
-        "--status", required=True, choices=config.task_status_values,
+        "--status", required=True,
         help="The initial status of the task.",
     )
     create_parser.add_argument("--owner", default="", help="The owner working on the task.")
@@ -521,7 +529,7 @@ def main() -> int:
     )
     list_parser.add_argument("--owner", default=None, help="Filter tasks by owner.")
     list_parser.add_argument(
-        "--status", default=None, choices=config.task_status_values,
+        "--status", default=None,
         help="Filter tasks by status.",
     )
     list_parser.add_argument(
@@ -544,7 +552,7 @@ def main() -> int:
     )
     status_parser.add_argument("--id", required=True, help="The task ID.")
     status_parser.add_argument(
-        "--status", required=True, choices=config.task_status_values,
+        "--status", required=True,
         help="The new status.",
     )
 
@@ -572,6 +580,20 @@ def main() -> int:
     remove_link_parser.add_argument("--link-id", required=True, help="The task ID to unlink.")
 
     args = parser.parse_args()
+
+    # Set the workspace path before any helpers are called.
+    _WORKSPACE_PATH = args.workspace_path
+    config = load_config(_WORKSPACE_PATH)
+
+    # Validate status values against the loaded config where applicable.
+    if hasattr(args, "status") and args.status is not None:
+        if args.status not in config.task_status_values:
+            valid = ", ".join(config.task_status_values)
+            print(
+                f"Error: invalid status '{args.status}' (choose from: {valid})",
+                file=sys.stderr,
+            )
+            return 1
 
     handlers = {
         "create": cmd_create,

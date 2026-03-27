@@ -42,13 +42,17 @@ REPORT_FILENAME_DATETIME_FORMAT = "%Y-%m-%d_%H-%M-%S"
 REPORT_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
+# Set by `main()` when `--workspace-path` is provided.
+_WORKSPACE_PATH: str | None = None
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 def get_reports_dir() -> str:
     """Returns the absolute path to the reports directory."""
-    return os.path.join(resolve_working_dir(), REPORTS_DIR_NAME)
+    return os.path.join(resolve_working_dir(_WORKSPACE_PATH), REPORTS_DIR_NAME)
 
 
 def list_report_files() -> list[str]:
@@ -177,8 +181,15 @@ def cmd_list(args: argparse.Namespace) -> int:
 
 def main() -> int:
     """Entry point. Parses subcommands and dispatches to handlers."""
+    global _WORKSPACE_PATH
+
     parser = argparse.ArgumentParser(
         description="CLI for managing cobots reports."
+    )
+    parser.add_argument(
+        "--workspace-path",
+        default=None,
+        help="Explicit path to the .cobots/ workspace directory.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -201,6 +212,8 @@ def main() -> int:
     )
 
     args = parser.parse_args()
+
+    _WORKSPACE_PATH = args.workspace_path
 
     handlers = {
         "create": cmd_create,
