@@ -30,6 +30,9 @@ Creates a new report from the template. Reads the report body from STDIN.
 * `--title` *(required)* - The title of the report.
 * `--author` *(required)* - The author of the report.
 
+**NOTE:** When specifying these fields, please do *not* use colons (`:`) in the text.
+This will confuse the YAML parser.
+
 ## Output
 
 Prints the absolute path to the newly created report file.

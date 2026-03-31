@@ -53,6 +53,9 @@ Creates a new task from `template.task.md`. Reads the description from STDIN.
 * `--owner` *(optional)* - The owner working on the task.
 * `--linked-tasks` *(optional)* - Comma-separated list of linked task IDs.
 
+**NOTE:** When specifying these fields, please do *not* use colons (`:`) in the text.
+This will confuse the YAML parser.
+
 ### `list`
 
 Lists all tasks, one per line, showing task ID, title, and status.
