@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-reports-cli.py - CLI for creating and listing cobots reports.
+reports-cli.py - CLI for creating, listing, and inspecting cobots reports.
 
-Provides subcommands to create reports from `template.report.md` and to
-list existing reports stored under `.cobots/reports/`.
+Provides subcommands to create reports from `template.report.md`, list
+existing reports, and inspect individual reports stored under `.cobots/reports/`.
 """
 
 import argparse
 import glob
 import os
 import re
+import secrets
 import sys
 from datetime import datetime, timezone
 
@@ -24,19 +25,17 @@ from venv.venv import activate_venv
 activate_venv()
 
 from cobots_lib.workspace.constants import REPORTS_DIR_NAME, REPORT_FILE_SUFFIX
-from cobots_lib.workspace.working_dir import resolve_working_dir
+from cobots_lib.workspace.working_dir import load_config, resolve_working_dir
 
 # Path to the report template, in the same directory as this script.
 REPORT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "template.report.md")
 
 # Placeholder strings inside the report template.
+PH_REPORT_ID = "REPLACE_WITH_REPORT_ID"
 PH_REPORT_TITLE = "REPLACE_WITH_REPORT_TITLE"
 PH_REPORT_AUTHOR = "REPLACE_WITH_REPORT_AUTHOR"
 PH_REPORT_TIMESTAMP = "REPLACE_WITH_CREATION_DATETIME"
 PH_REPORT_CONTENTS = "REPLACE_WITH_REPORT_CONTENTS"
-
-# Datetime format used in report file names.
-REPORT_FILENAME_DATETIME_FORMAT = "%Y-%m-%d_%H-%M-%S"
 
 # Datetime format used in the frontmatter timestamp field.
 REPORT_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -61,19 +60,83 @@ def list_report_files() -> list[str]:
     return sorted(glob.glob(pattern))
 
 
-def parse_report_frontmatter(path: str) -> dict:
-    """Parses a report file and returns its YAML frontmatter as a dict."""
+def generate_report_id(length: int) -> str:
+    """Generates a random hex string of the given character length."""
+    byte_count = (length + 1) // 2
+    return secrets.token_hex(byte_count)[:length]
+
+
+def find_report_file(report_id: str) -> str | None:
+    """Finds a report file by exact or partial ID prefix.
+
+    If `report_id` matches exactly one file (by full ID or unique prefix),
+    returns its path. Returns ``None`` if no match is found. Prints an
+    error and returns ``None`` if the prefix is ambiguous.
+    """
+    # Try exact match first.
+    candidate = os.path.join(get_reports_dir(), f"{report_id}{REPORT_FILE_SUFFIX}")
+    if os.path.isfile(candidate):
+        return candidate
+
+    # Fall back to prefix matching.
+    matches = [
+        p for p in list_report_files()
+        if os.path.basename(p).startswith(report_id)
+    ]
+
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        ids = [os.path.basename(p).removesuffix(REPORT_FILE_SUFFIX) for p in matches]
+        print(
+            f"Error: ambiguous ID prefix '{report_id}' matches: {', '.join(ids)}",
+            file=sys.stderr,
+        )
+        return None
+    return None
+
+
+def resolve_report(report_id: str) -> str | None:
+    """Finds a report file by ID (exact or prefix), printing an error if not found.
+
+    Returns the path on success, or ``None`` on failure (with an error
+    already printed to stderr).
+    """
+    path = find_report_file(report_id)
+    if path is None:
+        print(f"Error: report '{report_id}' not found.", file=sys.stderr)
+    return path
+
+
+def report_id_from_path(path: str) -> str:
+    """Extracts the full report ID from a report file path."""
+    return os.path.basename(path).removesuffix(REPORT_FILE_SUFFIX)
+
+
+def parse_report_file(path: str) -> tuple[dict, str]:
+    """Parses a report file into its YAML frontmatter dict and body string.
+
+    The frontmatter is the content between the first pair of ``---``
+    delimiters. The body is everything after the closing delimiter.
+    """
     import yaml
 
     with open(path, "r", encoding="utf-8") as fh:
         content = fh.read()
 
+    # Split on the `---` delimiters.
     parts = content.split("---", 2)
     if len(parts) < 3:
-        return {}
+        return {}, content
 
-    fm = yaml.safe_load(parts[1])
-    return fm if fm is not None else {}
+    frontmatter_str = parts[1]
+    body = parts[2]
+
+    frontmatter = yaml.safe_load(frontmatter_str)
+    if frontmatter is None:
+        frontmatter = {}
+
+    return frontmatter, body
 
 
 def slugify_title(title: str) -> str:
@@ -91,6 +154,7 @@ def sanitize_author(author: str) -> str:
 
 def render_template(
     template: str,
+    report_id: str,
     title: str,
     author: str,
     timestamp: str,
@@ -98,6 +162,7 @@ def render_template(
 ) -> str:
     """Replaces all placeholders in the template with the given values."""
     result = template
+    result = result.replace(PH_REPORT_ID, report_id)
     result = result.replace(PH_REPORT_TITLE, title)
     result = result.replace(PH_REPORT_AUTHOR, author)
     result = result.replace(PH_REPORT_TIMESTAMP, timestamp)
@@ -109,7 +174,7 @@ def render_template(
 # Subcommands
 # ---------------------------------------------------------------------------
 
-def cmd_create(args: argparse.Namespace) -> int:
+def cmd_create(args: argparse.Namespace, config) -> int:
     """Handles the ``create`` subcommand."""
     print("Enter the report contents (press Ctrl+D when finished):", file=sys.stderr)
     contents = sys.stdin.read().strip()
@@ -126,23 +191,25 @@ def cmd_create(args: argparse.Namespace) -> int:
     with open(template_path, "r", encoding="utf-8") as fh:
         template = fh.read()
 
-    # Capture the current UTC time for both the file name and frontmatter.
+    # Capture the current UTC time for the frontmatter.
     now_utc = datetime.now(timezone.utc)
     timestamp = now_utc.strftime(REPORT_TIMESTAMP_FORMAT)
+
+    # Generate a report ID.
+    report_id = generate_report_id(config.report_id_length)
 
     # Render the template.
     content = render_template(
         template=template,
+        report_id=report_id,
         title=args.title,
         author=sanitize_author(args.author),
         timestamp=timestamp,
         contents=contents,
     )
 
-    # Build the file name.
-    filename_ts = now_utc.strftime(REPORT_FILENAME_DATETIME_FORMAT)
-    slug = slugify_title(args.title)
-    filename = f"{filename_ts}_{slug}{REPORT_FILE_SUFFIX}"
+    # Build the file name using the report ID.
+    filename = f"{report_id}{REPORT_FILE_SUFFIX}"
 
     # Ensure the reports directory exists and write the file.
     reports_dir = get_reports_dir()
@@ -156,7 +223,7 @@ def cmd_create(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_list(args: argparse.Namespace) -> int:
+def cmd_list(args: argparse.Namespace, config) -> int:
     """Handles the ``list`` subcommand."""
     report_files = list_report_files()
     if not report_files:
@@ -164,13 +231,54 @@ def cmd_list(args: argparse.Namespace) -> int:
         return 0
 
     for path in report_files:
-        fm = parse_report_frontmatter(path)
+        fm, _ = parse_report_file(path)
+        report_id = fm.get("id", "???")
         timestamp = fm.get("timestamp", "???")
         author = fm.get("author", "(unknown)")
         title = fm.get("title", "(untitled)")
         path_str = f" {path}" if args.show_path else ""
 
-        print(f"[{timestamp}] ({author}) {title}{path_str}")
+        print(f"[{report_id}] [{timestamp}] ({author}) {title}{path_str}")
+
+    return 0
+
+
+def cmd_get(args: argparse.Namespace, config) -> int:
+    """Handles the ``get`` subcommand."""
+    report_path = resolve_report(args.id)
+    if report_path is None:
+        return 1
+
+    fm, body = parse_report_file(report_path)
+
+    # Extract the contents (text after the `# Title` heading).
+    contents = ""
+    body_lines = body.splitlines()
+    content_start = None
+    for i, line in enumerate(body_lines):
+        stripped = line.strip()
+        # Skip until after the first `# Title` heading.
+        if content_start is None and stripped.startswith("# ") and not stripped.startswith("## "):
+            content_start = i + 1
+            continue
+
+    if content_start is not None:
+        contents = "\n".join(body_lines[content_start:]).strip()
+
+    # Print formatted output.
+    print(f"Path:           {report_path}")
+    print(f"ID:             {fm.get('id', '???')}")
+    print(f"Title:          {fm.get('title', '(untitled)')}")
+    print(f"Author:         {fm.get('author', '(unknown)')}")
+    print(f"Timestamp:      {fm.get('timestamp', '???')}")
+
+    print()
+    print("Contents:")
+    if contents:
+        for line in contents.splitlines():
+            print(f"  {line}")
+    else:
+        print("  (none)")
 
     return 0
 
@@ -211,16 +319,26 @@ def main() -> int:
         help="Show the full file path for each report.",
     )
 
+    # -- get --
+    get_parser = subparsers.add_parser(
+        "get",
+        help="Show details of a report.",
+    )
+    get_parser.add_argument("--id", required=True, help="The report ID.")
+
     args = parser.parse_args()
 
+    # Set the workspace path before any helpers are called.
     _WORKSPACE_PATH = args.workspace_path
+    config = load_config(_WORKSPACE_PATH)
 
     handlers = {
         "create": cmd_create,
         "list": cmd_list,
+        "get": cmd_get,
     }
 
-    return handlers[args.command](args)
+    return handlers[args.command](args, config)
 
 
 if __name__ == "__main__":

@@ -24,10 +24,14 @@ class CobotsConfig:
     # Default length (in hex characters) for randomly generated task IDs.
     DEFAULT_TASK_ID_LENGTH = 16
 
+    # Default length (in hex characters) for randomly generated report IDs.
+    DEFAULT_REPORT_ID_LENGTH = 16
+
     def __init__(
         self,
         task_status_values: list[str] | None = None,
         task_id_length: int | None = None,
+        report_id_length: int | None = None,
     ) -> None:
         """Initializes the configuration with the given or default values."""
         self.task_status_values = (
@@ -40,12 +44,18 @@ class CobotsConfig:
             if task_id_length is not None
             else self.DEFAULT_TASK_ID_LENGTH
         )
+        self.report_id_length = (
+            report_id_length
+            if report_id_length is not None
+            else self.DEFAULT_REPORT_ID_LENGTH
+        )
 
     def to_dict(self) -> dict:
         """Returns the configuration as a plain dictionary."""
         return {
             "task_status_values": self.task_status_values,
             "task_id_length": self.task_id_length,
+            "report_id_length": self.report_id_length,
         }
 
     def to_yaml(self) -> str:
@@ -63,6 +73,7 @@ class CobotsConfig:
         config = cls(
             task_status_values=data.get("task_status_values"),
             task_id_length=data.get("task_id_length"),
+            report_id_length=data.get("report_id_length"),
         )
         return config
 
