@@ -39,6 +39,7 @@ Creates a new report from the template. Reads the report body from STDIN.
 
 * `--title` *(required)* - The title of the report.
 * `--author` *(required)* - The author of the report.
+* `--empty` *(optional)* - Create the report with empty contents, skipping STDIN.
 
 **NOTE:** When specifying these fields, please do *not* use colons (`:`) in the text.
 This will confuse the YAML parser.

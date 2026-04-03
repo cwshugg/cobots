@@ -176,11 +176,14 @@ def render_template(
 
 def cmd_create(args: argparse.Namespace, config) -> int:
     """Handles the ``create`` subcommand."""
-    print("Enter the report contents (press Ctrl+D when finished):", file=sys.stderr)
-    contents = sys.stdin.read().strip()
-    if not contents:
-        print("Error: report contents must be provided via STDIN.", file=sys.stderr)
-        return 1
+    if args.empty:
+        contents = ""
+    else:
+        print("Enter the report contents (press Ctrl+D when finished):", file=sys.stderr)
+        contents = sys.stdin.read().strip()
+        if not contents:
+            print("Error: report contents must be provided via STDIN.", file=sys.stderr)
+            return 1
 
     # Load the template.
     template_path = os.path.normpath(REPORT_TEMPLATE_PATH)
@@ -308,6 +311,10 @@ def main() -> int:
     )
     create_parser.add_argument("--title", required=True, help="The title of the report.")
     create_parser.add_argument("--author", required=True, help="The author of the report.")
+    create_parser.add_argument(
+        "--empty", action="store_true",
+        help="Create the report with empty contents, skipping STDIN.",
+    )
 
     # -- list --
     list_parser = subparsers.add_parser(
