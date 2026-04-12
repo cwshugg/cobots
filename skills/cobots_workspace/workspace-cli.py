@@ -50,10 +50,25 @@ def main() -> int:
         action="store_true",
         help="Initialize the full workspace (.cobots/, config, tasks/, reports/).",
     )
+    parser.add_argument(
+        "--name",
+        default="",
+        help="Workspace name to set during --init (defaults to empty string).",
+    )
+    parser.add_argument(
+        "--show-workspace-name",
+        action="store_true",
+        help="Print the current workspace name from the config and exit.",
+    )
 
     args = parser.parse_args()
 
-    if not args.show_config_path and not args.show_workspace_path and not args.init:
+    if (
+        not args.show_config_path
+        and not args.show_workspace_path
+        and not args.show_workspace_name
+        and not args.init
+    ):
         parser.print_help()
         return 1
 
@@ -67,6 +82,19 @@ def main() -> int:
         print(resolve_working_dir(wp))
         return 0
 
+    if args.show_workspace_name:
+        config_path = resolve_config_path(wp)
+        if not os.path.isfile(config_path):
+            print(
+                "Error: workspace is not initialized "
+                f"(config not found: {config_path})",
+                file=sys.stderr,
+            )
+            return 1
+        config = CobotsConfig.from_file(config_path)
+        print(config.workspace_name)
+        return 0
+
     if args.init:
         working_dir = resolve_working_dir(wp)
         config_path = resolve_config_path(wp)
@@ -78,9 +106,15 @@ def main() -> int:
         # 1. Create the workspace directory.
         os.makedirs(working_dir, exist_ok=True)
 
-        # 2. Create the config file.
+        # 2. Create or update the config file.
         if not already_exists:
-            CobotsConfig().write_file(config_path)
+            CobotsConfig(workspace_name=args.name).write_file(config_path)
+        elif args.name:
+            # Update the workspace name if --name was explicitly provided
+            # on a re-init of an existing workspace.
+            config = CobotsConfig.from_file(config_path)
+            config.workspace_name = args.name
+            config.write_file(config_path)
 
         # 3. Create the tasks directory.
         os.makedirs(tasks_dir, exist_ok=True)

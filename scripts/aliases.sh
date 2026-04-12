@@ -1,9 +1,9 @@
 #!/bin/bash
 # aliases.sh - Shell functions for invoking the cobots CLI tools.
 #
-# Provides convenience commands for the three cobots CLIs (tasks, reports,
-# workspace). Each function locates the repository root automatically so the
-# commands work regardless of the user's current directory.
+# Provides convenience commands for the four cobots CLIs (tasks, reports,
+# workspace, ntfy). Each function locates the repository root automatically so
+# the commands work regardless of the user's current directory.
 #
 # Usage:
 #   source scripts/aliases.sh
@@ -12,6 +12,7 @@
 #   cobots-tasks     - Manage cobots tasks.
 #   cobots-reports   - Generate cobots reports.
 #   cobots-workspace - Manage the cobots workspace.
+#   cobots-ntfy      - Send notifications via ntfy.
 #
 # All arguments are forwarded to the underlying Python CLI script. For example:
 #   cobots-tasks list --status done
@@ -40,4 +41,10 @@ function cobots-reports()
 function cobots-workspace()
 {
     "${__COBOTS_PYTHON}" "${__COBOTS_REPO_DIR}/skills/cobots_workspace/workspace-cli.py" "$@"
+}
+
+# Invokes the cobots ntfy CLI (skills/cobots_ntfy/ntfy-cli.py).
+function cobots-ntfy()
+{
+    "${__COBOTS_PYTHON}" "${__COBOTS_REPO_DIR}/skills/cobots_ntfy/ntfy-cli.py" "$@"
 }

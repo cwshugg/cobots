@@ -11,6 +11,58 @@ import yaml
 from cobots_lib.workspace.constants import CONFIG_FILE_NAME
 
 
+class NtfyConfig:
+    """Configuration for the ntfy notification integration.
+
+    Holds the server URL, topic, and optional authentication token
+    used by the ntfy notification skill. Instances can be converted
+    to and from plain dictionaries for YAML serialization.
+    """
+
+    # Default ntfy server URL (the public ntfy.sh instance).
+    DEFAULT_URL = "https://ntfy.sh"
+
+    def __init__(
+        self,
+        url: str | None = None,
+        topic: str | None = None,
+        token: str | None = None,
+    ) -> None:
+        """Initializes the ntfy configuration with the given or
+        default values.
+
+        Note: URL validation (scheme check) is deferred to
+        `NtfyClient.send()` so that config objects can be
+        constructed and serialized without network constraints.
+        """
+        self.url: str = (url or self.DEFAULT_URL).rstrip("/")
+        self.topic: str = topic or ""
+        self.token: str = token or ""
+
+    def to_dict(self) -> dict:
+        """Returns the ntfy configuration as a plain dictionary."""
+        return {
+            "url": self.url,
+            "topic": self.topic,
+            "token": self.token,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "NtfyConfig":
+        """Creates an `NtfyConfig` from a plain dictionary."""
+        return cls(
+            url=data.get("url"),
+            topic=data.get("topic"),
+            token=data.get("token"),
+        )
+
+    def __repr__(self) -> str:
+        safe = self.to_dict()
+        if safe.get("token"):
+            safe["token"] = "***"
+        return f"NtfyConfig({safe!r})"
+
+
 class CobotsConfig:
     """Represents the cobots configuration.
 
@@ -32,6 +84,8 @@ class CobotsConfig:
         task_status_values: list[str] | None = None,
         task_id_length: int | None = None,
         report_id_length: int | None = None,
+        ntfy: "NtfyConfig | None" = None,
+        workspace_name: str = "",
     ) -> None:
         """Initializes the configuration with the given or default values."""
         self.task_status_values = (
@@ -49,13 +103,17 @@ class CobotsConfig:
             if report_id_length is not None
             else self.DEFAULT_REPORT_ID_LENGTH
         )
+        self.ntfy = ntfy if ntfy is not None else NtfyConfig()
+        self.workspace_name: str = workspace_name
 
     def to_dict(self) -> dict:
         """Returns the configuration as a plain dictionary."""
         return {
+            "workspace_name": self.workspace_name,
             "task_status_values": self.task_status_values,
             "task_id_length": self.task_id_length,
             "report_id_length": self.report_id_length,
+            "ntfy": self.ntfy.to_dict(),
         }
 
     def to_yaml(self) -> str:
@@ -74,6 +132,8 @@ class CobotsConfig:
             task_status_values=data.get("task_status_values"),
             task_id_length=data.get("task_id_length"),
             report_id_length=data.get("report_id_length"),
+            ntfy=NtfyConfig.from_dict(data.get("ntfy", {})),
+            workspace_name=data.get("workspace_name", ""),
         )
         return config
 
@@ -97,4 +157,7 @@ class CobotsConfig:
             fh.write(self.to_yaml())
 
     def __repr__(self) -> str:
-        return f"CobotsConfig({self.to_dict()!r})"
+        safe = self.to_dict()
+        if safe.get("ntfy", {}).get("token"):
+            safe["ntfy"]["token"] = "***"
+        return f"CobotsConfig({safe!r})"

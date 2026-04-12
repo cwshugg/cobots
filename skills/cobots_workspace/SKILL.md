@@ -26,15 +26,23 @@ python workspace-cli.py --show-config-path
 # Print the resolved working directory path (no side effects).
 python workspace-cli.py --show-workspace-path
 
+# Print the current workspace name from the config.
+python workspace-cli.py --show-workspace-name
+
 # Initialize the full workspace.
 python workspace-cli.py --init
+
+# Initialize the full workspace with a workspace name.
+python workspace-cli.py --init --name "my-project"
 ```
 
 ## Arguments
 
 * `--show-config-path` - Print the resolved config file path without modifying anything.
 * `--show-workspace-path` - Print the resolved working directory path without modifying anything.
+* `--show-workspace-name` - Print the current workspace name from the config and exit.
 * `--init` - Initialize the full workspace: creates `.cobots/`, `cobots-config.yaml`, `tasks/`, and `reports/`.
+* `--name` - Workspace name to set during `--init` (defaults to empty string).
 
 ## Examples
 
@@ -45,7 +53,13 @@ $ python workspace-cli.py --show-config-path
 $ python workspace-cli.py --show-workspace-path
 /home/user/my-project/.cobots
 
+$ python workspace-cli.py --show-workspace-name
+my-project
+
 $ python workspace-cli.py --init
+Initialized workspace: /home/user/my-project/.cobots
+
+$ python workspace-cli.py --init --name "my-project"
 Initialized workspace: /home/user/my-project/.cobots
 
 $ python workspace-cli.py --init
