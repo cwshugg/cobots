@@ -37,7 +37,7 @@ PH_REPORT_AUTHOR = "REPLACE_WITH_REPORT_AUTHOR"
 PH_REPORT_TIMESTAMP = "REPLACE_WITH_CREATION_DATETIME"
 PH_REPORT_CONTENTS = "REPLACE_WITH_REPORT_CONTENTS"
 
-# Datetime format used in the frontmatter timestamp field.
+# Datetime format used in the created_timestamp frontmatter field.
 REPORT_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
@@ -233,15 +233,23 @@ def cmd_list(args: argparse.Namespace, config) -> int:
         print("No reports found.")
         return 0
 
+    # Collect report metadata for sorting and display.
+    reports = []
     for path in report_files:
         fm, _ = parse_report_file(path)
+        reports.append((path, fm))
+
+    # Sort by created_timestamp (ascending).
+    reports.sort(key=lambda r: r[1].get("created_timestamp", ""))
+
+    for path, fm in reports:
         report_id = fm.get("id", "???")
-        timestamp = fm.get("timestamp", "???")
+        created_ts = fm.get("created_timestamp", "???")
         author = fm.get("author", "(unknown)")
         title = fm.get("title", "(untitled)")
         path_str = f" {path}" if args.show_path else ""
 
-        print(f"[{report_id}] [{timestamp}] ({author}) {title}{path_str}")
+        print(f"[{report_id}] [{created_ts}] ({author}) {title}{path_str}")
 
     return 0
 
@@ -271,9 +279,9 @@ def cmd_get(args: argparse.Namespace, config) -> int:
     # Print formatted output.
     print(f"Path:           {report_path}")
     print(f"ID:             {fm.get('id', '???')}")
+    print(f"Created:        {fm.get('created_timestamp', '???')}")
     print(f"Title:          {fm.get('title', '(untitled)')}")
     print(f"Author:         {fm.get('author', '(unknown)')}")
-    print(f"Timestamp:      {fm.get('timestamp', '???')}")
 
     print()
     print("Contents:")

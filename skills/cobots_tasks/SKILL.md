@@ -58,7 +58,7 @@ This will confuse the YAML parser.
 
 ### `list`
 
-Lists all tasks, one per line, showing task ID, title, and status.
+Lists all tasks, one per line, showing task ID, creation timestamp, title, and status. Results are sorted by creation date (ascending).
 
 * `--owner` *(optional)* - Filter tasks by owner.
 * `--status` *(optional)* - Filter tasks by status.
@@ -66,7 +66,7 @@ Lists all tasks, one per line, showing task ID, title, and status.
 
 ### `get`
 
-Shows full details of a task: file path, ID, title, all frontmatter fields, description, and the latest discussion entry.
+Shows full details of a task: file path, ID, creation timestamp, title, all frontmatter fields, description, and the latest discussion entry.
 
 * `--id` *(required)* - The task ID.
 

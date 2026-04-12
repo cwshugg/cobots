@@ -36,8 +36,12 @@ PH_TASK_TITLE = "REPLACE_WITH_TASK_TITLE"
 PH_TASK_STATUS = "REPLACE_WITH_TASK_STATUS_STRING"
 PH_TASK_AUTHOR = "REPLACE_WITH_NAME_OF_HUMAN_OR_AGENT_THAT_CREATED_THE_ITEM"
 PH_TASK_OWNER = "REPLACE_WITH_NAME_OF_HUMAN_OR_AGENT_THAT_IS_WORKING_ON_THIS_ITEM"
+PH_TASK_CREATED_TIMESTAMP = "REPLACE_WITH_CREATED_TIMESTAMP"
 PH_LINKED_TASKS = "REPLACE_WITH_ARRAY_OF_LINKED_TASK_IDS"
 PH_TASK_DESCRIPTION = "REPLACE_WITH_TASK_DESCRIPTION"
+
+# Datetime format used in the created_timestamp frontmatter field.
+TASK_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # Datetime format used in discussion headers.
 DISCUSSION_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -190,6 +194,7 @@ def render_template(
     status: str,
     author: str,
     owner: str,
+    created_timestamp: str,
     linked_tasks: list[str],
     description: str,
 ) -> str:
@@ -200,6 +205,7 @@ def render_template(
     result = result.replace(PH_TASK_STATUS, status)
     result = result.replace(PH_TASK_AUTHOR, author)
     result = result.replace(PH_TASK_OWNER, owner)
+    result = result.replace(PH_TASK_CREATED_TIMESTAMP, created_timestamp)
     result = result.replace(PH_LINKED_TASKS, format_linked_tasks(linked_tasks))
     result = result.replace(PH_TASK_DESCRIPTION, description)
     return result
@@ -250,6 +256,10 @@ def cmd_create(args: argparse.Namespace, config) -> int:
     if args.linked_tasks:
         linked_tasks = [t.strip() for t in args.linked_tasks.split(",") if t.strip()]
 
+    # Capture the current UTC time for the frontmatter.
+    now_utc = datetime.now(timezone.utc)
+    created_timestamp = now_utc.strftime(TASK_TIMESTAMP_FORMAT)
+
     # Generate a task ID and render the template.
     task_id = generate_task_id(config.task_id_length)
     content = render_template(
@@ -259,6 +269,7 @@ def cmd_create(args: argparse.Namespace, config) -> int:
         status=args.status,
         author=sanitize_author(args.author),
         owner=args.owner or "",
+        created_timestamp=created_timestamp,
         linked_tasks=linked_tasks,
         description=description,
     )
@@ -298,8 +309,12 @@ def cmd_list(args: argparse.Namespace, config) -> int:
         print("No tasks match the given filters.")
         return 0
 
+    # Sort by created_timestamp (ascending).
+    tasks.sort(key=lambda t: t[1].get("created_timestamp", ""))
+
     for path, fm in tasks:
         task_id = fm.get("id", "???")
+        created_ts = fm.get("created_timestamp", "???")
         title = fm.get("title", "(untitled)")
         status = fm.get("status", "(none)")
         owner = fm.get("owner", "")
@@ -310,7 +325,7 @@ def cmd_list(args: argparse.Namespace, config) -> int:
         linked_str = f" linked=[{', '.join(str(t) for t in linked)}]" if linked else ""
         path_str = f" {path}" if args.show_path else ""
 
-        print(f"[{task_id}] {title} ({status}){owner_str}{linked_str}{path_str}")
+        print(f"[{task_id}] [{created_ts}] {title} ({status}){owner_str}{linked_str}{path_str}")
 
     return 0
 
@@ -396,6 +411,7 @@ def cmd_get(args: argparse.Namespace, config) -> int:
     # Print formatted output.
     print(f"Path:           {task_path}")
     print(f"ID:             {fm.get('id', '???')}")
+    print(f"Created:        {fm.get('created_timestamp', '???')}")
     print(f"Title:          {fm.get('title', '(untitled)')}")
     print(f"Status:         {fm.get('status', '(none)')}")
     print(f"Author:         {fm.get('author', '(none)')}")

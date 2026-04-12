@@ -46,13 +46,13 @@ This will confuse the YAML parser.
 
 ### `list`
 
-Lists all reports, one per line, showing report ID, timestamp, author, and title.
+Lists all reports, one per line, showing report ID, creation timestamp, author, and title. Results are sorted by creation date (ascending).
 
 * `--show-path` *(optional)* - Include the full file path for each report.
 
 ### `get`
 
-Shows full details of a report: file path, ID, title, author, timestamp, and contents.
+Shows full details of a report: file path, ID, creation timestamp, title, author, and contents.
 
 * `--id` *(required)* - The report ID (supports partial ID prefixes).
 
@@ -69,7 +69,7 @@ The file is named `{id}.report.md`, where `{id}` is a randomly-generated hex str
 Prints one line per report in the format:
 
 ```
-[{id}] [{timestamp}] ({author}) {title}
+[{id}] [{created_timestamp}] ({author}) {title}
 ```
 
 ### `get`
@@ -79,9 +79,9 @@ Prints formatted report details:
 ```
 Path:           /path/to/report.report.md
 ID:             abc123...
+Created:        2026-03-26 15:16:55
 Title:          Report Title
 Author:         alice
-Timestamp:      2026-03-26 15:16:55
 
 Contents:
   (the body text, with each line indented by 2 spaces)
@@ -101,9 +101,9 @@ $ python reports-cli.py list
 $ python reports-cli.py get --id a1b2c3d4
 Path:           /home/user/my-project/.cobots/reports/a1b2c3d4e5f67890.report.md
 ID:             a1b2c3d4e5f67890
+Created:        2026-03-26 15:16:55
 Title:          Auth Module Review
 Author:         alice
-Timestamp:      2026-03-26 15:16:55
 
 Contents:
   We reviewed the auth module design.
