@@ -53,3 +53,7 @@ If you encounter a new problem to solve, please create another task to represent
 Then, update the current task's status, and the new one's, to reflect that you are now working on the new task.
 Once the sub-task is complete, return to the original.
 
+### 5. Send Notifications
+
+When you complete a task, please follow the [notification instructions](./cobots_notifications.instructions.md) to learn how to send a notification to the human.
+

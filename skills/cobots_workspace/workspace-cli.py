@@ -22,6 +22,7 @@ activate_venv()
 
 from cobots_lib.workspace.config import CobotsConfig
 from cobots_lib.workspace.constants import REPORTS_DIR_NAME, TASKS_DIR_NAME
+from cobots_lib.workspace.topic import generate_default_topic
 from cobots_lib.workspace.working_dir import resolve_config_path, resolve_working_dir
 
 
@@ -108,7 +109,9 @@ def main() -> int:
 
         # 2. Create or update the config file.
         if not already_exists:
-            CobotsConfig(workspace_name=args.name).write_file(config_path)
+            config = CobotsConfig(workspace_name=args.name)
+            config.ntfy.topic = generate_default_topic()
+            config.write_file(config_path)
         elif args.name:
             # Update the workspace name if --name was explicitly provided
             # on a re-init of an existing workspace.
