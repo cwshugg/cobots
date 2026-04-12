@@ -111,6 +111,9 @@ function __install_skills()
             -name "template.*.md" -or \
             -name "requirements.txt" -or \
             -name "*.py" \
+        \) -and \
+        \( \
+            -not -wholename "*venv*" \
         \) \
         -print0 \
     )
@@ -243,6 +246,16 @@ function __main()
             __log_error "Failed to set up virtual environment."
             return ${retval}
         fi
+    fi
+
+    # Install the aliases file:
+    aliases_src="${REPO_DIR}/scripts/aliases.sh"
+    aliases_dst="${install_path}/aliases.sh"
+    if [ -f "${aliases_src}" ]; then
+        install -D "${aliases_src}" "${aliases_dst}"
+        __log_info "Installed aliases file to: ${aliases_dst}"
+    else
+        __log_error "Aliases source file not found (\"${aliases_src}\"). Skipping."
     fi
 
     return ${R_SUCCESS}

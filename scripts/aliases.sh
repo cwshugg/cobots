@@ -18,7 +18,7 @@
 
 
 # Resolve the repository root from this script's location.
-__COBOTS_REPO_DIR="$(dirname "$(realpath "$(dirname "${BASH_SOURCE[0]}")")")"
+__COBOTS_REPO_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 
 # Path to the Python interpreter inside the shared virtual environment.
 __COBOTS_PYTHON="${__COBOTS_REPO_DIR}/skills/.venv/bin/python3"
