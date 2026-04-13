@@ -24,6 +24,7 @@ So far, the system of agents works like this:
 * [The Developer](agents/developer.cobots.agent.md) implements the architect's design.
 * [The Scrutinizer](agents/scrutinizer.cobots.agent.md) reviews the implementation (or anything else requested) and suggests improvements to be made.
 * [The Documenter](agents/documenter.cobots.agent.md) writes documentation for the project.
+* [The Researcher](agents/researcher.cobots.agent.md) researches topics and produces research reports.
 
 The following skills are used by the agents to track work and report progress:
 
@@ -31,6 +32,8 @@ The following skills are used by the agents to track work and report progress:
     * Tasks represent individual items that need completing for the project.
 * [Cobots Reports CLI](skills/cobots_reports/) - A small CLI tool that creates `*.report.md` files under a working directory.
     * Reports represent write-ups created by the agents, such as architecture plans, code reviews, etc.
+* [Cobots Ntfy CLI](skills/cobots_ntfy/) - A small CLI tool that uses [ntfy.sh](https://ntfy.sh) to send me notifications on agent progress, updates, questions, etc.
+    * By default, it is configured to run in "confidential" mode, meaning that only generic messages can be sent via ntfy.sh (such as "build finished", "waiting for input", etc.).
 
 ## Resources
 
