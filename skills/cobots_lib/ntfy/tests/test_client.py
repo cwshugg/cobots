@@ -319,7 +319,7 @@ class TestNtfyClientSendValidation(unittest.TestCase):
 
     def setUp(self) -> None:
         self.client = NtfyClient(
-            url="https://ntfy.sh", topic="test-topic",
+            url="https://ntfy.sh", topic="test-topic", mode="open",
         )
 
     def test_empty_message_raises(self) -> None:
@@ -351,6 +351,8 @@ class TestNtfyClientSendValidation(unittest.TestCase):
         client._topic = "test"
         client._token = ""
         client._timeout = 30
+        client._mode = "open"
+        client._confidential_messages = {}
         with self.assertRaises(ValueError) as ctx:
             client.send("test")
         self.assertIn("http", str(ctx.exception))
@@ -369,6 +371,7 @@ class TestNtfyClientSendSuccess(unittest.TestCase):
             url="https://ntfy.sh",
             topic="test-topic",
             token="tk_abc",
+            mode="open",
         )
 
     @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
@@ -424,7 +427,7 @@ class TestNtfyClientSendSuccess(unittest.TestCase):
     def test_no_auth_header_when_token_empty(
         self, mock_urlopen: MagicMock,
     ) -> None:
-        client = NtfyClient(url="https://ntfy.sh", topic="t")
+        client = NtfyClient(url="https://ntfy.sh", topic="t", mode="open")
         mock_urlopen.return_value = _make_success_response()
 
         client.send("test")
@@ -499,7 +502,7 @@ class TestNtfyClientSendSuccess(unittest.TestCase):
         """When optional params are omitted, their headers should not
         be present.
         """
-        client = NtfyClient(url="https://ntfy.sh", topic="t")
+        client = NtfyClient(url="https://ntfy.sh", topic="t", mode="open")
         mock_urlopen.return_value = _make_success_response()
 
         client.send("just a message")
@@ -517,7 +520,7 @@ class TestNtfyClientSendSuccess(unittest.TestCase):
         self, mock_urlopen: MagicMock,
     ) -> None:
         client = NtfyClient(
-            url="https://ntfy.sh", topic="t", timeout=42,
+            url="https://ntfy.sh", topic="t", timeout=42, mode="open",
         )
         mock_urlopen.return_value = _make_success_response()
 
@@ -548,7 +551,7 @@ class TestNtfyClientSendHTTPErrors(unittest.TestCase):
 
     def setUp(self) -> None:
         self.client = NtfyClient(
-            url="https://ntfy.sh", topic="test-topic",
+            url="https://ntfy.sh", topic="test-topic", mode="open",
         )
 
     @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
@@ -623,7 +626,7 @@ class TestNtfyClientSendNetworkErrors(unittest.TestCase):
 
     def setUp(self) -> None:
         self.client = NtfyClient(
-            url="https://ntfy.sh", topic="test-topic",
+            url="https://ntfy.sh", topic="test-topic", mode="open",
         )
 
     @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
@@ -698,7 +701,9 @@ class TestSendNotification(unittest.TestCase):
         mock_urlopen.return_value = _make_success_response("conv001")
 
         config = CobotsConfig(
-            ntfy=NtfyConfig(topic="my-topic", token="tk_test"),
+            ntfy=NtfyConfig(
+                topic="my-topic", token="tk_test", mode="open",
+            ),
         )
         result = send_notification(config, "Hello!")
 
@@ -710,7 +715,7 @@ class TestSendNotification(unittest.TestCase):
         mock_urlopen.return_value = _make_success_response()
 
         config = CobotsConfig(
-            ntfy=NtfyConfig(topic="my-topic"),
+            ntfy=NtfyConfig(topic="my-topic", mode="open"),
         )
         send_notification(
             config,
@@ -735,7 +740,9 @@ class TestSendNotification(unittest.TestCase):
             send_notification(config, "test")
 
     def test_raises_on_empty_message(self) -> None:
-        config = CobotsConfig(ntfy=NtfyConfig(topic="my-topic"))
+        config = CobotsConfig(
+            ntfy=NtfyConfig(topic="my-topic", mode="open"),
+        )
         with self.assertRaises(ValueError):
             send_notification(config, "")
 
@@ -758,6 +765,7 @@ class TestEndToEndFlow(unittest.TestCase):
                 url="https://self-hosted.example.com",
                 topic="cobots-alerts",
                 token="tk_production",
+                mode="open",
             ),
         )
         client = NtfyClient.from_config(config)
@@ -789,7 +797,9 @@ class TestEndToEndFlow(unittest.TestCase):
         """A single client can send multiple messages."""
         mock_urlopen.return_value = _make_success_response()
 
-        client = NtfyClient(url="https://ntfy.sh", topic="multi")
+        client = NtfyClient(
+            url="https://ntfy.sh", topic="multi", mode="open",
+        )
 
         r1 = client.send("first")
         r2 = client.send("second", priority=5)
@@ -799,6 +809,334 @@ class TestEndToEndFlow(unittest.TestCase):
         self.assertTrue(r2.success)
         self.assertTrue(r3.success)
         self.assertEqual(mock_urlopen.call_count, 3)
+
+
+# ===================================================================
+# NtfyClient mode tests
+# ===================================================================
+
+
+class TestNtfyClientModeValidation(unittest.TestCase):
+    """Verify mode validation in `NtfyClient.__init__`."""
+
+    def test_valid_modes_accepted(self) -> None:
+        """All three valid mode strings are accepted."""
+        for mode in ("open", "confidential", "closed"):
+            client = NtfyClient(
+                url="https://ntfy.sh", topic="t", mode=mode,
+            )
+            self.assertEqual(client._mode, mode)
+
+    def test_invalid_mode_raises(self) -> None:
+        """An invalid mode string raises ValueError."""
+        with self.assertRaises(ValueError) as ctx:
+            NtfyClient(
+                url="https://ntfy.sh", topic="t", mode="silent",
+            )
+        self.assertIn("invalid ntfy mode", str(ctx.exception))
+
+    def test_empty_mode_raises(self) -> None:
+        """An empty mode string raises ValueError."""
+        with self.assertRaises(ValueError):
+            NtfyClient(
+                url="https://ntfy.sh", topic="t", mode="",
+            )
+
+    def test_default_mode_is_confidential(self) -> None:
+        """Default mode is 'confidential'."""
+        client = NtfyClient(url="https://ntfy.sh", topic="t")
+        self.assertEqual(client._mode, "confidential")
+
+
+class TestNtfyClientOpenMode(unittest.TestCase):
+    """Verify open mode allows any message."""
+
+    def setUp(self) -> None:
+        self.client = NtfyClient(
+            url="https://ntfy.sh", topic="test", mode="open",
+        )
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_any_message_allowed(self, mock_urlopen: MagicMock) -> None:
+        """Open mode accepts free-form text."""
+        mock_urlopen.return_value = _make_success_response("open001")
+
+        result = self.client.send("Any arbitrary message!")
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.message_id, "open001")
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_predefined_key_also_sent_as_is(
+        self, mock_urlopen: MagicMock,
+    ) -> None:
+        """In open mode, a predefined key is sent as-is (not resolved)."""
+        mock_urlopen.return_value = _make_success_response()
+
+        self.client.send("task_done")
+
+        req = mock_urlopen.call_args[0][0]
+        self.assertEqual(req.data, b"task_done")
+
+
+class TestNtfyClientConfidentialMode(unittest.TestCase):
+    """Verify confidential mode restricts messages to predefined keys."""
+
+    def setUp(self) -> None:
+        self.client = NtfyClient(
+            url="https://ntfy.sh", topic="test", mode="confidential",
+        )
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_valid_key_resolves_to_display_string(
+        self, mock_urlopen: MagicMock,
+    ) -> None:
+        """A valid predefined key is resolved to its display string."""
+        mock_urlopen.return_value = _make_success_response("conf001")
+
+        result = self.client.send("task_done")
+
+        self.assertTrue(result.success)
+        # The actual HTTP body should be the display string, not the key.
+        req = mock_urlopen.call_args[0][0]
+        self.assertEqual(
+            req.data, "A task has been completed".encode("utf-8"),
+        )
+
+    def test_invalid_key_raises_valueerror(self) -> None:
+        """An unrecognized key raises ValueError."""
+        with self.assertRaises(ValueError) as ctx:
+            self.client.send("not_a_real_key")
+        msg = str(ctx.exception)
+        self.assertIn("unknown message key", msg)
+        self.assertIn("not_a_real_key", msg)
+
+    def test_invalid_key_lists_valid_keys(self) -> None:
+        """ValueError from invalid key lists all valid keys."""
+        with self.assertRaises(ValueError) as ctx:
+            self.client.send("bogus_key")
+        msg = str(ctx.exception)
+        # Should mention at least some known keys.
+        self.assertIn("task_done", msg)
+        self.assertIn("build_done", msg)
+
+    def test_freeform_text_rejected(self) -> None:
+        """Free-form text that isn't a key is rejected."""
+        with self.assertRaises(ValueError):
+            self.client.send("This is a free-form message")
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_all_default_keys_work(
+        self, mock_urlopen: MagicMock,
+    ) -> None:
+        """Every default predefined key should send successfully."""
+        from cobots_lib.ntfy.client import DEFAULT_CONFIDENTIAL_MESSAGES
+
+        mock_urlopen.return_value = _make_success_response()
+        for key in DEFAULT_CONFIDENTIAL_MESSAGES:
+            result = self.client.send(key)
+            self.assertTrue(result.success, f"key {key!r} failed")
+
+
+class TestNtfyClientConfidentialCustomMessages(unittest.TestCase):
+    """Verify custom confidential messages override defaults."""
+
+    def setUp(self) -> None:
+        self.custom = {
+            "custom_one": "Custom message one",
+            "custom_two": "Custom message two",
+        }
+        self.client = NtfyClient(
+            url="https://ntfy.sh",
+            topic="test",
+            mode="confidential",
+            confidential_messages=self.custom,
+        )
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_custom_key_works(self, mock_urlopen: MagicMock) -> None:
+        """Custom keys are accepted."""
+        mock_urlopen.return_value = _make_success_response()
+
+        result = self.client.send("custom_one")
+
+        self.assertTrue(result.success)
+        req = mock_urlopen.call_args[0][0]
+        self.assertEqual(
+            req.data, b"Custom message one",
+        )
+
+    def test_default_key_rejected_with_custom(self) -> None:
+        """When custom messages are provided, default keys are not valid."""
+        with self.assertRaises(ValueError):
+            self.client.send("task_done")
+
+
+class TestNtfyClientClosedMode(unittest.TestCase):
+    """Verify closed mode refuses all sends."""
+
+    def setUp(self) -> None:
+        self.client = NtfyClient(
+            url="https://ntfy.sh", topic="test", mode="closed",
+        )
+
+    def test_send_returns_failure(self) -> None:
+        """Closed mode returns failure without HTTP request."""
+        result = self.client.send("task_done")
+
+        self.assertFalse(result.success)
+        self.assertEqual(result.status_code, 0)
+        self.assertEqual(
+            result.error, "notifications are disabled (mode=closed)",
+        )
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_no_http_request_made(
+        self, mock_urlopen: MagicMock,
+    ) -> None:
+        """Closed mode should not make any HTTP requests."""
+        self.client.send("any message")
+
+        mock_urlopen.assert_not_called()
+
+    def test_freeform_also_blocked(self) -> None:
+        """Even free-form text is blocked in closed mode."""
+        result = self.client.send("Any free-form message")
+        self.assertFalse(result.success)
+        self.assertIn("mode=closed", result.error)
+
+
+class TestNtfyClientFromConfigWithMode(unittest.TestCase):
+    """Verify `from_config` reads mode and confidential_messages."""
+
+    def test_mode_read_from_config(self) -> None:
+        """Mode is read from config."""
+        config = CobotsConfig(
+            ntfy=NtfyConfig(topic="t", mode="open"),
+        )
+        client = NtfyClient.from_config(config)
+        self.assertEqual(client._mode, "open")
+
+    def test_default_mode_from_config(self) -> None:
+        """Default config mode is 'confidential'."""
+        config = CobotsConfig(ntfy=NtfyConfig(topic="t"))
+        client = NtfyClient.from_config(config)
+        self.assertEqual(client._mode, "confidential")
+
+    def test_custom_messages_from_config(self) -> None:
+        """Custom messages from config are loaded into the client."""
+        config = CobotsConfig(
+            ntfy=NtfyConfig(
+                topic="t",
+                confidential_messages=[
+                    {"key": "my_msg", "message": "My custom msg"},
+                ],
+            ),
+        )
+        client = NtfyClient.from_config(config)
+        self.assertEqual(
+            client._confidential_messages,
+            {"my_msg": "My custom msg"},
+        )
+
+    def test_none_messages_uses_defaults(self) -> None:
+        """None confidential_messages uses the hardcoded defaults."""
+        from cobots_lib.ntfy.client import DEFAULT_CONFIDENTIAL_MESSAGES
+
+        config = CobotsConfig(ntfy=NtfyConfig(topic="t"))
+        client = NtfyClient.from_config(config)
+        self.assertEqual(
+            client._confidential_messages,
+            DEFAULT_CONFIDENTIAL_MESSAGES,
+        )
+
+
+class TestSendNotificationWithMode(unittest.TestCase):
+    """Verify `send_notification()` respects mode settings."""
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_confidential_mode_with_valid_key(
+        self, mock_urlopen: MagicMock,
+    ) -> None:
+        """Confidential mode: valid key sends the display string."""
+        mock_urlopen.return_value = _make_success_response("sn001")
+
+        config = CobotsConfig(
+            ntfy=NtfyConfig(topic="t", mode="confidential"),
+        )
+        result = send_notification(config, "task_done")
+
+        self.assertTrue(result.success)
+        req = mock_urlopen.call_args[0][0]
+        self.assertEqual(
+            req.data, "A task has been completed".encode("utf-8"),
+        )
+
+    def test_closed_mode_returns_failure(self) -> None:
+        """Closed mode: send_notification returns failure."""
+        config = CobotsConfig(
+            ntfy=NtfyConfig(topic="t", mode="closed"),
+        )
+        result = send_notification(config, "task_done")
+
+        self.assertFalse(result.success)
+        self.assertIn("mode=closed", result.error)
+
+
+class TestDefaultConfidentialMessages(unittest.TestCase):
+    """Verify the hardcoded default confidential messages."""
+
+    def test_message_count(self) -> None:
+        """Should have between 15 and 20 default messages."""
+        from cobots_lib.ntfy.client import DEFAULT_CONFIDENTIAL_MESSAGES
+
+        count = len(DEFAULT_CONFIDENTIAL_MESSAGES)
+        self.assertGreaterEqual(count, 15)
+        self.assertLessEqual(count, 20)
+
+    def test_keys_are_snake_case(self) -> None:
+        """All keys should be snake_case."""
+        import re
+        from cobots_lib.ntfy.client import DEFAULT_CONFIDENTIAL_MESSAGES
+
+        pattern = re.compile(r"^[a-z][a-z0-9]*(_[a-z0-9]+)*$")
+        for key in DEFAULT_CONFIDENTIAL_MESSAGES:
+            self.assertRegex(
+                key, pattern,
+                f"key {key!r} is not snake_case",
+            )
+
+    def test_values_are_nonempty_strings(self) -> None:
+        """All display strings should be non-empty."""
+        from cobots_lib.ntfy.client import DEFAULT_CONFIDENTIAL_MESSAGES
+
+        for key, msg in DEFAULT_CONFIDENTIAL_MESSAGES.items():
+            self.assertIsInstance(msg, str)
+            self.assertTrue(
+                msg.strip(),
+                f"message for key {key!r} is empty",
+            )
+
+    def test_expected_keys_present(self) -> None:
+        """Certain expected keys should be in the defaults."""
+        from cobots_lib.ntfy.client import DEFAULT_CONFIDENTIAL_MESSAGES
+
+        expected = [
+            "task_started", "task_done", "task_blocked",
+            "build_done", "build_failed",
+            "tests_passed", "tests_failed",
+            "review_requested", "review_done",
+            "question_for_human",
+            "deploy_done",
+            "error_occurred",
+            "waiting_for_input",
+            "report_ready",
+        ]
+        for key in expected:
+            self.assertIn(
+                key, DEFAULT_CONFIDENTIAL_MESSAGES,
+                f"expected key {key!r} not in defaults",
+            )
 
 
 if __name__ == "__main__":

@@ -95,6 +95,7 @@ class TestNtfyConfigToDict(unittest.TestCase):
             "url": "https://ntfy.sh",
             "topic": "",
             "token": "",
+            "mode": "confidential",
         })
 
     def test_custom_to_dict(self) -> None:
@@ -229,6 +230,7 @@ class TestCobotsConfigToDict(unittest.TestCase):
             "url": "https://ntfy.sh",
             "topic": "",
             "token": "",
+            "mode": "confidential",
         })
 
     def test_custom_ntfy_in_dict(self) -> None:

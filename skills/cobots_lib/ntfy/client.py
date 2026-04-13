@@ -5,6 +5,13 @@ Implements the `NtfyClient` class and `send_notification()` convenience
 function for publishing messages to an ntfy.sh server. Uses only the
 Python standard library (`urllib.request`) — no third-party HTTP
 dependencies.
+
+Supports three notification modes:
+
+- **open** — any message content is allowed.
+- **confidential** — only predefined messages (selected by key) are
+  allowed. This prevents leaking sensitive project data.
+- **closed** — all sends are refused.
 """
 
 from __future__ import annotations
@@ -48,6 +55,43 @@ PRIORITY_NAMES: dict[str, int] = {
 
 # Default HTTP request timeout in seconds.
 DEFAULT_TIMEOUT = 30
+
+# The set of valid notification mode strings.
+VALID_MODES = {"open", "confidential", "closed"}
+
+# The default notification mode when none is specified.
+DEFAULT_MODE = "confidential"
+
+
+# ---------------------------------------------------------------------------
+# Default confidential messages
+# ---------------------------------------------------------------------------
+
+# Hardcoded predefined messages for confidential mode. Each entry maps
+# a snake_case key to a human-readable display string. When in
+# ``confidential`` mode, only these keys (or custom overrides from
+# config) are accepted by `NtfyClient.send()`.
+DEFAULT_CONFIDENTIAL_MESSAGES: dict[str, str] = {
+    "task_started": "A task has been started",
+    "task_done": "A task has been completed",
+    "task_blocked": "A task is blocked",
+    "build_started": "Build started",
+    "build_done": "Build completed",
+    "build_failed": "Build failed",
+    "tests_passed": "All tests passed",
+    "tests_failed": "Tests failed",
+    "review_requested": "Code review requested",
+    "review_done": "Code review completed",
+    "question_for_human": "A cobot has a question for you",
+    "deploy_started": "Deployment started",
+    "deploy_done": "Deployment completed",
+    "deploy_failed": "Deployment failed",
+    "error_occurred": "An error occurred",
+    "waiting_for_input": "Waiting for human input",
+    "report_ready": "A report is ready for review",
+    "pipeline_started": "Pipeline started",
+    "pipeline_done": "Pipeline completed",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -103,6 +147,13 @@ class NtfyClient:
     Wraps a single (url, topic, token) combination and exposes a `send()`
     method that never raises on network or HTTP errors — all outcomes are
     communicated through `NtfyResponse`.
+
+    The client operates in one of three modes:
+
+    - **open** — any message content is accepted.
+    - **confidential** — only predefined message keys are accepted.
+      The key is resolved to its display string before sending.
+    - **closed** — all sends are immediately refused.
     """
 
     def __init__(
@@ -111,6 +162,8 @@ class NtfyClient:
         topic: str,
         token: str = "",
         timeout: int = DEFAULT_TIMEOUT,
+        mode: str = DEFAULT_MODE,
+        confidential_messages: dict[str, str] | None = None,
     ) -> None:
         """Initializes the ntfy client.
 
@@ -119,38 +172,69 @@ class NtfyClient:
             topic: The ntfy topic to publish to.
             token: Optional Bearer access token for authentication.
             timeout: HTTP request timeout in seconds.
+            mode: Notification mode — ``"open"``, ``"confidential"``,
+                or ``"closed"``. Defaults to ``"confidential"``.
+            confidential_messages: Optional dict mapping message keys
+                to display strings. If ``None``, the hardcoded
+                `DEFAULT_CONFIDENTIAL_MESSAGES` are used.
 
         Raises:
-            ValueError: If *url* or *topic* is empty.
+            ValueError: If *url* or *topic* is empty, or *mode* is
+                not a valid mode string.
         """
         if not url or not url.strip():
             raise ValueError("ntfy server URL must not be empty")
         if not topic or not topic.strip():
             raise ValueError("ntfy topic must not be empty")
+        if mode not in VALID_MODES:
+            raise ValueError(
+                f"invalid ntfy mode {mode!r}: "
+                f"must be one of {sorted(VALID_MODES)}"
+            )
 
         self._url: str = url.rstrip("/")
         self._topic: str = topic.strip()
         self._token: str = token
         self._timeout: int = timeout
+        self._mode: str = mode
+        self._confidential_messages: dict[str, str] = (
+            confidential_messages
+            if confidential_messages is not None
+            else dict(DEFAULT_CONFIDENTIAL_MESSAGES)
+        )
 
     @classmethod
     def from_config(cls, config: "CobotsConfig") -> "NtfyClient":
         """Creates an `NtfyClient` from a `CobotsConfig` object.
 
-        Reads url, topic, and token from ``config.ntfy``.
+        Reads url, topic, token, mode, and confidential_messages
+        from ``config.ntfy``.
 
         Args:
             config: A `CobotsConfig` instance (imported from
                 ``cobots_lib.workspace.config``).
 
         Raises:
-            ValueError: If ``config.ntfy.topic`` is empty.
+            ValueError: If ``config.ntfy.topic`` is empty or
+                ``config.ntfy.mode`` is invalid.
         """
         ntfy_cfg = config.ntfy
+
+        # Convert config's list-of-dicts to a key→message dict, or
+        # None to use the hardcoded defaults.
+        conf_msgs: dict[str, str] | None = None
+        if ntfy_cfg.confidential_messages is not None:
+            conf_msgs = {
+                entry["key"]: entry["message"]
+                for entry in ntfy_cfg.confidential_messages
+            }
+
         return cls(
             url=ntfy_cfg.url,
             topic=ntfy_cfg.topic,
             token=ntfy_cfg.token,
+            mode=ntfy_cfg.mode,
+            confidential_messages=conf_msgs,
         )
 
     # -----------------------------------------------------------------
@@ -169,8 +253,19 @@ class NtfyClient:
     ) -> NtfyResponse:
         """Publishes a message to the configured ntfy topic.
 
+        Behavior depends on the client's mode:
+
+        - **open** — *message* is sent as-is.
+        - **confidential** — *message* must be a valid predefined key.
+          The key is looked up and the corresponding display string is
+          sent instead.
+        - **closed** — returns an ``NtfyResponse`` with
+          ``success=False`` immediately.
+
         Args:
-            message: The notification body text. Must be non-empty.
+            message: The notification body text (open mode) or a
+                predefined message key (confidential mode). Must be
+                non-empty.
             title: Optional notification title.
             priority: Optional priority (1–5). ``None`` uses the server
                 default (3).
@@ -179,17 +274,28 @@ class NtfyClient:
             markdown: If ``True``, the message is rendered as Markdown.
 
         Returns:
-            An `NtfyResponse` with ``success=True`` and ``message_id`` on
-            success, or ``success=False`` with an ``error`` description on
-            failure.
+            An `NtfyResponse` with ``success=True`` and ``message_id``
+            on success, or ``success=False`` with an ``error``
+            description on failure.
 
         Raises:
-            ValueError: If *message* is empty or *priority* is invalid.
+            ValueError: If *message* is empty, *priority* is invalid,
+                or (in confidential mode) *message* is not a valid key.
 
         Note:
             Network and HTTP errors are **never** raised — they are
             captured in the returned `NtfyResponse`.
         """
+        # -- Mode check (fail-fast) -----------------------------------------
+
+        # Closed mode: refuse immediately.
+        if self._mode == "closed":
+            return NtfyResponse(
+                success=False,
+                status_code=0,
+                error="notifications are disabled (mode=closed)",
+            )
+
         # -- Validation (fail-fast, in the order defined by section 6.3) --
 
         # 1. Topic was already validated in __init__, but guard anyway.
@@ -200,14 +306,25 @@ class NtfyClient:
         if not message or not message.strip():
             raise ValueError("notification message must not be empty")
 
-        # 3. Priority must be valid (if provided).
+        # 3. Confidential mode: resolve message key to display string.
+        if self._mode == "confidential":
+            if message not in self._confidential_messages:
+                valid_keys = sorted(self._confidential_messages.keys())
+                raise ValueError(
+                    f"unknown message key {message!r} "
+                    f"(mode=confidential). "
+                    f"Valid keys: {', '.join(valid_keys)}"
+                )
+            message = self._confidential_messages[message]
+
+        # 4. Priority must be valid (if provided).
         if priority is not None and priority not in VALID_PRIORITIES:
             raise ValueError(
                 f"invalid priority {priority!r}: must be one of "
                 f"{sorted(VALID_PRIORITIES)}"
             )
 
-        # 4. URL sanity check.
+        # 5. URL sanity check.
         if not (
             self._url.startswith("http://")
             or self._url.startswith("https://")

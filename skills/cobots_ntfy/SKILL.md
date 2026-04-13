@@ -10,8 +10,9 @@ A CLI skill for sending push notifications via [ntfy.sh](https://ntfy.sh).
 ## Description
 
 This skill provides subcommands to send notifications to an ntfy.sh topic, send a test
-notification to verify configuration, and display the current ntfy settings from the
-cobots workspace. It wraps the shared `cobots_lib.ntfy.client` library.
+notification to verify configuration, list available predefined message keys, and display
+the current ntfy settings from the cobots workspace. It wraps the shared
+`cobots_lib.ntfy.client` library.
 
 ## Configuration
 
@@ -22,6 +23,7 @@ ntfy:
   url: "https://ntfy.sh"
   topic: "my-cobots-topic"
   token: "tk_AgXXXXXXXXXXXX"
+  mode: "confidential"
 ```
 
 | Field | Default | Required | Description |
@@ -29,14 +31,48 @@ ntfy:
 | `url` | `https://ntfy.sh` | No | The ntfy server base URL. |
 | `topic` | `""` (empty) | Yes (for sending) | The ntfy topic to publish to. |
 | `token` | `""` (empty) | No | Optional Bearer access token for authenticated topics. |
+| `mode` | `"confidential"` | No | Notification mode: `open`, `confidential`, or `closed`. |
+| `confidential_messages` | (none) | No | Optional list of custom message key/text pairs for confidential mode. |
 
 Use the cobots workspace CLI to initialize the workspace if it hasn't already been set up.
+
+### Notification Modes
+
+The `mode` field controls what messages the ntfy skill is allowed to send:
+
+| Mode | Behavior |
+|---|---|
+| `open` | Any message content is allowed. No restrictions. |
+| `confidential` | Only predefined messages (selected by key) are allowed. Free-form text is rejected. This prevents leaking sensitive project data through notifications. |
+| `closed` | All notifications are refused. No messages are sent. |
+
+The default mode is **`confidential`**.
+
+### Custom Confidential Messages
+
+In `confidential` mode, the skill uses a set of hardcoded predefined messages by default.
+You can override these by adding a `confidential_messages` list to the config:
+
+```yaml
+ntfy:
+  mode: "confidential"
+  confidential_messages:
+    - key: "deploy_ready"
+      message: "Ready for deployment"
+    - key: "ci_passed"
+      message: "CI pipeline passed"
+```
+
+If `confidential_messages` is absent from the config, the hardcoded defaults are used.
 
 ## Usage
 
 ```bash
-# Send a notification with a message.
+# Send a notification (open mode: free-form message).
 python ntfy-cli.py send --message "Build completed successfully" --title "CI"
+
+# Send a notification (confidential mode: use a message key).
+python ntfy-cli.py send --message task_done --title "Cobots"
 
 # Send with priority and tags.
 python ntfy-cli.py send -m "Disk usage at 95%" -t "Warning" -p high --tags "warning"
@@ -56,6 +92,9 @@ python ntfy-cli.py test
 # Send a test notification to a specific topic.
 python ntfy-cli.py test --topic "my-test-topic"
 
+# List available predefined message keys.
+python ntfy-cli.py list-messages
+
 # Display the current ntfy configuration.
 python ntfy-cli.py show-config
 ```
@@ -66,7 +105,7 @@ python ntfy-cli.py show-config
 
 Publishes a notification to the configured ntfy topic.
 
-* `--message` / `-m` — Message body. If omitted, reads from STDIN.
+* `--message` / `-m` — Message body (open mode) or message key (confidential mode). If omitted, reads from STDIN.
 * `--title` / `-t` *(optional)* — Notification title.
 * `--priority` / `-p` *(optional)* — Priority: 1–5 or name (min, low, default, high, max, urgent).
 * `--tags` *(optional)* — Comma-separated list of tags.
@@ -77,6 +116,12 @@ Publishes a notification to the configured ntfy topic.
 * `--token` *(optional)* — Override the auth token from config.
 
 If both `--message` and STDIN are empty, the command exits with an error.
+
+**Mode behavior:**
+
+- **open** — `--message` accepts any free-form text.
+- **confidential** — `--message` must be a valid predefined message key (e.g. `task_done`). If an invalid key is given, the error output includes all available keys and their text.
+- **closed** — The command exits with an error explaining notifications are disabled.
 
 **Output (success):** `Sent: <message_id>` to stdout, exit 0.
 
@@ -90,10 +135,34 @@ Sends a predefined test notification to verify the ntfy configuration.
 * `--url` *(optional)* — Override the server URL from config.
 * `--token` *(optional)* — Override the auth token from config.
 
-The test notification uses:
-- Message: "Cobots ntfy test notification"
-- Title: "Cobots Test"
-- Tags: white_check_mark
+In **open** mode, the test notification uses a free-form message. In **confidential** mode, it uses the `task_done` predefined key. In **closed** mode, the command exits with an error.
+
+### `list-messages`
+
+Prints all available predefined message keys and their display text. Uses custom messages from config if set, otherwise the hardcoded defaults.
+
+```
+Available message keys:
+  build_done → Build completed
+  build_failed → Build failed
+  build_started → Build started
+  deploy_done → Deployment completed
+  deploy_failed → Deployment failed
+  deploy_started → Deployment started
+  error_occurred → An error occurred
+  pipeline_done → Pipeline completed
+  pipeline_started → Pipeline started
+  question_for_human → A cobot has a question for you
+  report_ready → A report is ready for review
+  review_done → Code review completed
+  review_requested → Code review requested
+  task_blocked → A task is blocked
+  task_done → A task has been completed
+  task_started → A task has been started
+  tests_failed → Tests failed
+  tests_passed → All tests passed
+  waiting_for_input → Waiting for human input
+```
 
 ### `show-config`
 
@@ -106,6 +175,7 @@ ntfy configuration:
   url:   https://ntfy.sh
   topic: my-cobots-topic
   token: tk_Ag... (set)
+  mode:  confidential
 ```
 
 ## Return Codes
@@ -124,7 +194,7 @@ from cobots_lib.workspace.working_dir import load_config
 from cobots_lib.ntfy.client import send_notification
 
 config = load_config()
-result = send_notification(config, "Task completed!", title="Cobots", tags=["tada"])
+result = send_notification(config, "task_done", title="Cobots", tags=["tada"])
 if result.success:
     print(f"Sent: {result.message_id}")
 else:
@@ -136,6 +206,11 @@ For more control, use `NtfyClient` directly:
 ```python
 from cobots_lib.ntfy.client import NtfyClient
 
-client = NtfyClient(url="https://ntfy.sh", topic="my-topic", token="tk_...")
+# Open mode — any message allowed
+client = NtfyClient(url="https://ntfy.sh", topic="my-topic", token="tk_...", mode="open")
 result = client.send("Custom notification", priority=4, tags=["warning"])
+
+# Confidential mode (default) — only predefined keys allowed
+client = NtfyClient(url="https://ntfy.sh", topic="my-topic")
+result = client.send("task_done")  # resolves to "A task has been completed"
 ```

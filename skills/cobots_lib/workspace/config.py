@@ -14,7 +14,8 @@ from cobots_lib.workspace.constants import CONFIG_FILE_NAME
 class NtfyConfig:
     """Configuration for the ntfy notification integration.
 
-    Holds the server URL, topic, and optional authentication token
+    Holds the server URL, topic, optional authentication token,
+    notification mode, and optional custom confidential messages
     used by the ntfy notification skill. Instances can be converted
     to and from plain dictionaries for YAML serialization.
     """
@@ -22,14 +23,37 @@ class NtfyConfig:
     # Default ntfy server URL (the public ntfy.sh instance).
     DEFAULT_URL = "https://ntfy.sh"
 
+    # Default notification mode. Controls what messages can be sent.
+    # Valid values: "open", "confidential", "closed".
+    DEFAULT_MODE = "confidential"
+
+    # The set of valid mode strings.
+    VALID_MODES = {"open", "confidential", "closed"}
+
     def __init__(
         self,
         url: str | None = None,
         topic: str | None = None,
         token: str | None = None,
+        mode: str | None = None,
+        confidential_messages: list[dict] | None = None,
     ) -> None:
         """Initializes the ntfy configuration with the given or
         default values.
+
+        Args:
+            url: Base URL of the ntfy server.
+            topic: The ntfy topic to publish to.
+            token: Optional Bearer access token for authentication.
+            mode: Notification mode ("open", "confidential", or
+                "closed"). Defaults to "confidential".
+            confidential_messages: Optional list of dicts with "key"
+                and "message" fields to override/extend the hardcoded
+                default confidential messages. ``None`` means use the
+                hardcoded defaults.
+
+        Raises:
+            ValueError: If *mode* is not a valid mode string.
 
         Note: URL validation (scheme check) is deferred to
         `NtfyClient.send()` so that config objects can be
@@ -39,13 +63,32 @@ class NtfyConfig:
         self.topic: str = topic or ""
         self.token: str = token or ""
 
+        resolved_mode = mode or self.DEFAULT_MODE
+        if resolved_mode not in self.VALID_MODES:
+            raise ValueError(
+                f"invalid ntfy mode {resolved_mode!r}: "
+                f"must be one of {sorted(self.VALID_MODES)}"
+            )
+        self.mode: str = resolved_mode
+        self.confidential_messages: list[dict] | None = (
+            confidential_messages
+        )
+
     def to_dict(self) -> dict:
-        """Returns the ntfy configuration as a plain dictionary."""
-        return {
+        """Returns the ntfy configuration as a plain dictionary.
+
+        The ``confidential_messages`` key is only included when a
+        custom list has been explicitly set (i.e. not ``None``).
+        """
+        result: dict = {
             "url": self.url,
             "topic": self.topic,
             "token": self.token,
+            "mode": self.mode,
         }
+        if self.confidential_messages is not None:
+            result["confidential_messages"] = self.confidential_messages
+        return result
 
     @classmethod
     def from_dict(cls, data: dict) -> "NtfyConfig":
@@ -54,6 +97,8 @@ class NtfyConfig:
             url=data.get("url"),
             topic=data.get("topic"),
             token=data.get("token"),
+            mode=data.get("mode"),
+            confidential_messages=data.get("confidential_messages"),
         )
 
     def __repr__(self) -> str:

@@ -50,9 +50,19 @@ def _make_config(
     url: str = "https://ntfy.sh",
     topic: str = "test-topic",
     token: str = "",
+    mode: str = "open",
+    confidential_messages: list[dict] | None = None,
 ) -> CobotsConfig:
     """Creates a CobotsConfig with the given ntfy settings."""
-    return CobotsConfig(ntfy=NtfyConfig(url=url, topic=topic, token=token))
+    return CobotsConfig(
+        ntfy=NtfyConfig(
+            url=url,
+            topic=topic,
+            token=token,
+            mode=mode,
+            confidential_messages=confidential_messages,
+        ),
+    )
 
 
 def _make_send_args(**kwargs) -> argparse.Namespace:
@@ -803,6 +813,453 @@ class TestReprTokenMasking(unittest.TestCase):
         cfg = CobotsConfig(ntfy=NtfyConfig(token=""))
         r = repr(cfg)
         self.assertNotIn("***", r)
+
+
+# ---------------------------------------------------------------------------
+# Tests: NtfyConfig mode field
+# ---------------------------------------------------------------------------
+
+
+class TestNtfyConfigMode(unittest.TestCase):
+    """Tests for the ``mode`` field on `NtfyConfig`."""
+
+    def test_default_mode_is_confidential(self) -> None:
+        """Default mode should be 'confidential'."""
+        cfg = NtfyConfig()
+        self.assertEqual(cfg.mode, "confidential")
+
+    def test_valid_modes_accepted(self) -> None:
+        """All three valid modes should be accepted."""
+        for mode in ("open", "confidential", "closed"):
+            cfg = NtfyConfig(mode=mode)
+            self.assertEqual(cfg.mode, mode)
+
+    def test_invalid_mode_raises(self) -> None:
+        """An invalid mode string raises ValueError."""
+        with self.assertRaises(ValueError) as ctx:
+            NtfyConfig(mode="quiet")
+        self.assertIn("invalid ntfy mode", str(ctx.exception))
+
+    def test_mode_in_to_dict(self) -> None:
+        """``to_dict`` should include the mode field."""
+        cfg = NtfyConfig(mode="open")
+        d = cfg.to_dict()
+        self.assertEqual(d["mode"], "open")
+
+    def test_mode_from_dict(self) -> None:
+        """``from_dict`` should read the mode field."""
+        cfg = NtfyConfig.from_dict({"mode": "closed"})
+        self.assertEqual(cfg.mode, "closed")
+
+    def test_mode_from_dict_default(self) -> None:
+        """``from_dict`` with no mode uses the default."""
+        cfg = NtfyConfig.from_dict({})
+        self.assertEqual(cfg.mode, "confidential")
+
+
+class TestNtfyConfigConfidentialMessages(unittest.TestCase):
+    """Tests for the ``confidential_messages`` field on `NtfyConfig`."""
+
+    def test_default_is_none(self) -> None:
+        """Default confidential_messages should be None."""
+        cfg = NtfyConfig()
+        self.assertIsNone(cfg.confidential_messages)
+
+    def test_custom_messages_stored(self) -> None:
+        """Custom messages are stored correctly."""
+        msgs = [{"key": "a", "message": "Alpha"}]
+        cfg = NtfyConfig(confidential_messages=msgs)
+        self.assertEqual(cfg.confidential_messages, msgs)
+
+    def test_to_dict_includes_when_set(self) -> None:
+        """``to_dict`` includes confidential_messages when not None."""
+        msgs = [{"key": "a", "message": "Alpha"}]
+        cfg = NtfyConfig(confidential_messages=msgs)
+        d = cfg.to_dict()
+        self.assertIn("confidential_messages", d)
+        self.assertEqual(d["confidential_messages"], msgs)
+
+    def test_to_dict_excludes_when_none(self) -> None:
+        """``to_dict`` omits confidential_messages when None."""
+        cfg = NtfyConfig()
+        d = cfg.to_dict()
+        self.assertNotIn("confidential_messages", d)
+
+    def test_from_dict_with_messages(self) -> None:
+        """``from_dict`` reads confidential_messages."""
+        data = {
+            "confidential_messages": [
+                {"key": "x", "message": "Xray"},
+            ],
+        }
+        cfg = NtfyConfig.from_dict(data)
+        self.assertEqual(
+            cfg.confidential_messages,
+            [{"key": "x", "message": "Xray"}],
+        )
+
+    def test_from_dict_without_messages(self) -> None:
+        """``from_dict`` without confidential_messages gives None."""
+        cfg = NtfyConfig.from_dict({})
+        self.assertIsNone(cfg.confidential_messages)
+
+
+# ---------------------------------------------------------------------------
+# Tests: show-config displays mode
+# ---------------------------------------------------------------------------
+
+
+class TestCmdShowConfigMode(unittest.TestCase):
+    """Tests for ``show-config`` displaying the mode field."""
+
+    def test_show_config_displays_mode(self) -> None:
+        """show-config should display the current mode."""
+        config = _make_config(mode="confidential")
+        args = _make_show_config_args()
+
+        with patch(
+            "sys.stdout", new_callable=io.StringIO
+        ) as mock_out:
+            result = ntfy_cli.cmd_show_config(args, config)
+
+        self.assertEqual(result, 0)
+        output = mock_out.getvalue()
+        self.assertIn("mode:  confidential", output)
+
+    def test_show_config_displays_open_mode(self) -> None:
+        """show-config should display 'open' mode."""
+        config = _make_config(mode="open")
+        args = _make_show_config_args()
+
+        with patch(
+            "sys.stdout", new_callable=io.StringIO
+        ) as mock_out:
+            ntfy_cli.cmd_show_config(args, config)
+
+        self.assertIn("mode:  open", mock_out.getvalue())
+
+
+# ---------------------------------------------------------------------------
+# Tests: list-messages subcommand
+# ---------------------------------------------------------------------------
+
+
+def _make_list_messages_args(**kwargs) -> argparse.Namespace:
+    """Creates a Namespace mimicking parsed ``list-messages`` args."""
+    defaults = {
+        "command": "list-messages",
+        "workspace_path": None,
+    }
+    defaults.update(kwargs)
+    return argparse.Namespace(**defaults)
+
+
+class TestCmdListMessages(unittest.TestCase):
+    """Tests for the ``cmd_list_messages()`` command handler."""
+
+    def test_lists_default_messages(self) -> None:
+        """list-messages shows default predefined messages."""
+        config = _make_config()
+        args = _make_list_messages_args()
+
+        with patch(
+            "sys.stdout", new_callable=io.StringIO
+        ) as mock_out:
+            result = ntfy_cli.cmd_list_messages(args, config)
+
+        self.assertEqual(result, 0)
+        output = mock_out.getvalue()
+        self.assertIn("Available message keys:", output)
+        self.assertIn("task_done", output)
+        self.assertIn("A task has been completed", output)
+
+    def test_lists_custom_messages(self) -> None:
+        """list-messages shows custom messages from config."""
+        config = _make_config(
+            confidential_messages=[
+                {"key": "custom_a", "message": "Custom Alpha"},
+                {"key": "custom_b", "message": "Custom Beta"},
+            ],
+        )
+        args = _make_list_messages_args()
+
+        with patch(
+            "sys.stdout", new_callable=io.StringIO
+        ) as mock_out:
+            result = ntfy_cli.cmd_list_messages(args, config)
+
+        self.assertEqual(result, 0)
+        output = mock_out.getvalue()
+        self.assertIn("custom_a", output)
+        self.assertIn("Custom Alpha", output)
+        self.assertIn("custom_b", output)
+        self.assertIn("Custom Beta", output)
+        # Default keys should NOT be present.
+        self.assertNotIn("task_done", output)
+
+    def test_returns_zero(self) -> None:
+        """list-messages always returns 0."""
+        config = _make_config()
+        args = _make_list_messages_args()
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            result = ntfy_cli.cmd_list_messages(args, config)
+
+        self.assertEqual(result, 0)
+
+
+# ---------------------------------------------------------------------------
+# Tests: cmd_send with modes
+# ---------------------------------------------------------------------------
+
+
+class TestCmdSendConfidentialMode(unittest.TestCase):
+    """Tests for ``cmd_send()`` in confidential mode."""
+
+    def test_valid_key_sends_successfully(self) -> None:
+        """Confidential mode: valid key sends the resolved message."""
+        config = _make_config(mode="confidential", topic="test-topic")
+        args = _make_send_args(message="task_done")
+
+        mock_response = NtfyResponse(
+            success=True, status_code=200, message_id="conf_msg",
+        )
+
+        with patch.object(
+            ntfy_cli, "build_client"
+        ) as mock_build:
+            mock_client = MagicMock()
+            mock_client.send.return_value = mock_response
+            mock_build.return_value = mock_client
+
+            with patch(
+                "sys.stdout", new_callable=io.StringIO
+            ) as mock_out:
+                result = ntfy_cli.cmd_send(args, config)
+
+        self.assertEqual(result, 0)
+        self.assertIn("Sent: conf_msg", mock_out.getvalue())
+
+    def test_invalid_key_shows_available_keys(self) -> None:
+        """Invalid key in confidential mode prints available keys."""
+        config = _make_config(mode="confidential", topic="test-topic")
+        args = _make_send_args(message="not_a_valid_key")
+
+        with patch.object(
+            ntfy_cli, "build_client"
+        ) as mock_build:
+            mock_client = MagicMock()
+            mock_client.send.side_effect = ValueError(
+                "unknown message key 'not_a_valid_key'"
+            )
+            mock_build.return_value = mock_client
+
+            with patch(
+                "sys.stderr", new_callable=io.StringIO
+            ) as mock_err:
+                result = ntfy_cli.cmd_send(args, config)
+
+        self.assertEqual(result, 1)
+        output = mock_err.getvalue()
+        self.assertIn("Error:", output)
+        self.assertIn("Available message keys:", output)
+        self.assertIn("task_done", output)
+        self.assertIn("build_done", output)
+
+    def test_invalid_key_with_custom_messages(self) -> None:
+        """Invalid key shows custom messages when configured."""
+        config = _make_config(
+            mode="confidential",
+            topic="test-topic",
+            confidential_messages=[
+                {"key": "my_key", "message": "My message"},
+            ],
+        )
+        args = _make_send_args(message="wrong_key")
+
+        with patch.object(
+            ntfy_cli, "build_client"
+        ) as mock_build:
+            mock_client = MagicMock()
+            mock_client.send.side_effect = ValueError(
+                "unknown message key 'wrong_key'"
+            )
+            mock_build.return_value = mock_client
+
+            with patch(
+                "sys.stderr", new_callable=io.StringIO
+            ) as mock_err:
+                result = ntfy_cli.cmd_send(args, config)
+
+        self.assertEqual(result, 1)
+        output = mock_err.getvalue()
+        self.assertIn("my_key", output)
+        self.assertIn("My message", output)
+        # Default keys should NOT appear.
+        self.assertNotIn("task_done", output)
+
+
+class TestCmdSendClosedMode(unittest.TestCase):
+    """Tests for ``cmd_send()`` in closed mode."""
+
+    def test_closed_mode_send_returns_error(self) -> None:
+        """Closed mode: send returns error without HTTP request."""
+        config = _make_config(mode="closed", topic="test-topic")
+        args = _make_send_args(message="task_done")
+
+        mock_response = NtfyResponse(
+            success=False,
+            status_code=0,
+            error="notifications are disabled (mode=closed)",
+        )
+
+        with patch.object(
+            ntfy_cli, "build_client"
+        ) as mock_build:
+            mock_client = MagicMock()
+            mock_client.send.return_value = mock_response
+            mock_build.return_value = mock_client
+
+            with patch(
+                "sys.stderr", new_callable=io.StringIO
+            ) as mock_err:
+                result = ntfy_cli.cmd_send(args, config)
+
+        self.assertEqual(result, 1)
+        self.assertIn("mode=closed", mock_err.getvalue())
+
+
+class TestCmdSendOpenMode(unittest.TestCase):
+    """Tests for ``cmd_send()`` in open mode."""
+
+    def test_open_mode_freeform_message(self) -> None:
+        """Open mode: free-form messages are allowed."""
+        config = _make_config(mode="open", topic="test-topic")
+        args = _make_send_args(message="Any free-form text")
+
+        mock_response = NtfyResponse(
+            success=True, status_code=200, message_id="open_msg",
+        )
+
+        with patch.object(
+            ntfy_cli, "build_client"
+        ) as mock_build:
+            mock_client = MagicMock()
+            mock_client.send.return_value = mock_response
+            mock_build.return_value = mock_client
+
+            with patch(
+                "sys.stdout", new_callable=io.StringIO
+            ) as mock_out:
+                result = ntfy_cli.cmd_send(args, config)
+
+        self.assertEqual(result, 0)
+        self.assertIn("Sent: open_msg", mock_out.getvalue())
+
+
+# ---------------------------------------------------------------------------
+# Tests: cmd_test with modes
+# ---------------------------------------------------------------------------
+
+
+class TestCmdTestWithModes(unittest.TestCase):
+    """Tests for ``cmd_test()`` with different modes."""
+
+    def test_test_closed_mode_refused(self) -> None:
+        """Test subcommand in closed mode exits with error."""
+        config = _make_config(mode="closed", topic="test-topic")
+        args = _make_test_args()
+
+        with patch(
+            "sys.stderr", new_callable=io.StringIO
+        ) as mock_err:
+            result = ntfy_cli.cmd_test(args, config)
+
+        self.assertEqual(result, 1)
+        self.assertIn("mode=closed", mock_err.getvalue())
+
+    def test_test_open_mode_sends_freeform(self) -> None:
+        """Test in open mode sends the free-form test message."""
+        config = _make_config(mode="open", topic="test-topic")
+        args = _make_test_args()
+
+        mock_response = NtfyResponse(
+            success=True, status_code=200, message_id="test_open",
+        )
+
+        with patch.object(
+            ntfy_cli, "build_client"
+        ) as mock_build:
+            mock_client = MagicMock()
+            mock_client.send.return_value = mock_response
+            mock_build.return_value = mock_client
+
+            with patch(
+                "sys.stdout", new_callable=io.StringIO
+            ) as mock_out:
+                result = ntfy_cli.cmd_test(args, config)
+
+        self.assertEqual(result, 0)
+        mock_client.send.assert_called_once_with(
+            "Cobots ntfy test notification",
+            title="Cobots Test",
+            tags=["white_check_mark"],
+        )
+
+    def test_test_confidential_mode_uses_key(self) -> None:
+        """Test in confidential mode sends a predefined key."""
+        config = _make_config(
+            mode="confidential", topic="test-topic",
+        )
+        args = _make_test_args()
+
+        mock_response = NtfyResponse(
+            success=True, status_code=200, message_id="test_conf",
+        )
+
+        with patch.object(
+            ntfy_cli, "build_client"
+        ) as mock_build:
+            mock_client = MagicMock()
+            mock_client.send.return_value = mock_response
+            mock_build.return_value = mock_client
+
+            with patch(
+                "sys.stdout", new_callable=io.StringIO
+            ) as mock_out:
+                result = ntfy_cli.cmd_test(args, config)
+
+        self.assertEqual(result, 0)
+        mock_client.send.assert_called_once_with(
+            "task_done",
+            title="Cobots Test",
+            tags=["white_check_mark"],
+        )
+
+
+# ---------------------------------------------------------------------------
+# Tests: main() dispatches list-messages
+# ---------------------------------------------------------------------------
+
+
+class TestMainListMessagesDispatch(unittest.TestCase):
+    """Tests for ``main()`` dispatching the list-messages subcommand."""
+
+    @patch.object(ntfy_cli, "load_config")
+    def test_list_messages_dispatches(self, mock_load) -> None:
+        """'list-messages' subcommand dispatches correctly."""
+        mock_load.return_value = _make_config()
+
+        with patch(
+            "sys.argv", ["ntfy-cli.py", "list-messages"]
+        ):
+            with patch(
+                "sys.stdout", new_callable=io.StringIO
+            ) as mock_out:
+                result = ntfy_cli.main()
+
+        self.assertEqual(result, 0)
+        self.assertIn("Available message keys:", mock_out.getvalue())
 
 
 if __name__ == "__main__":
