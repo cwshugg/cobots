@@ -11,6 +11,7 @@ import glob
 import os
 import re
 import secrets
+import subprocess
 import sys
 from datetime import datetime, timezone
 
@@ -450,6 +451,29 @@ def cmd_get(args: argparse.Namespace, config) -> int:
     return 0
 
 
+def cmd_edit(args: argparse.Namespace, config) -> int:
+    """Handles the ``edit`` subcommand.
+
+    Opens the task file in the user's preferred editor (``$EDITOR``).
+    """
+    editor = os.environ.get("EDITOR")
+    if not editor:
+        print(
+            "Error: EDITOR environment variable is not set. "
+            "Please set it to your preferred editor "
+            "(e.g., export EDITOR=vim).",
+            file=sys.stderr,
+        )
+        return 1
+
+    task_path = resolve_task(args.id)
+    if task_path is None:
+        return 1
+
+    result = subprocess.run([editor, task_path])
+    return 0 if result.returncode == 0 else 1
+
+
 def cmd_add_link(args: argparse.Namespace, config) -> int:
     """Handles the ``add-link`` subcommand."""
     task_path = resolve_task(args.id)
@@ -579,6 +603,13 @@ def main() -> int:
     )
     get_parser.add_argument("--id", required=True, help="The task ID.")
 
+    # -- edit --
+    edit_parser = subparsers.add_parser(
+        "edit",
+        help="Open a task file in the user's preferred editor.",
+    )
+    edit_parser.add_argument("--id", required=True, help="The task ID.")
+
     # -- add-link --
     add_link_parser = subparsers.add_parser(
         "add-link",
@@ -617,6 +648,7 @@ def main() -> int:
         "add-discussion": cmd_add_discussion,
         "set-status": cmd_set_status,
         "get": cmd_get,
+        "edit": cmd_edit,
         "add-link": cmd_add_link,
         "remove-link": cmd_remove_link,
     }

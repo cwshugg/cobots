@@ -29,6 +29,9 @@ python reports-cli.py list --show-path
 
 # Show details of a report by ID (supports partial ID prefixes).
 python reports-cli.py get --id "abc123"
+
+# Open a report in your editor.
+python reports-cli.py edit --id "abc123"
 ```
 
 ## Subcommands
@@ -53,6 +56,12 @@ Lists all reports, one per line, showing report ID, creation timestamp, author, 
 ### `get`
 
 Shows full details of a report: file path, ID, creation timestamp, title, author, and contents.
+
+* `--id` *(required)* - The report ID (supports partial ID prefixes).
+
+### `edit`
+
+Opens a report file in the user's preferred editor (`$EDITOR`). If the `EDITOR` environment variable is not set, prints an error and exits.
 
 * `--id` *(required)* - The report ID (supports partial ID prefixes).
 

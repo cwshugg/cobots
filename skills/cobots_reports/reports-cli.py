@@ -11,6 +11,7 @@ import glob
 import os
 import re
 import secrets
+import subprocess
 import sys
 from datetime import datetime, timezone
 
@@ -294,6 +295,29 @@ def cmd_get(args: argparse.Namespace, config) -> int:
     return 0
 
 
+def cmd_edit(args: argparse.Namespace, config) -> int:
+    """Handles the ``edit`` subcommand.
+
+    Opens the report file in the user's preferred editor (``$EDITOR``).
+    """
+    editor = os.environ.get("EDITOR")
+    if not editor:
+        print(
+            "Error: EDITOR environment variable is not set. "
+            "Please set it to your preferred editor "
+            "(e.g., export EDITOR=vim).",
+            file=sys.stderr,
+        )
+        return 1
+
+    report_path = resolve_report(args.id)
+    if report_path is None:
+        return 1
+
+    result = subprocess.run([editor, report_path])
+    return 0 if result.returncode == 0 else 1
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -341,6 +365,13 @@ def main() -> int:
     )
     get_parser.add_argument("--id", required=True, help="The report ID.")
 
+    # -- edit --
+    edit_parser = subparsers.add_parser(
+        "edit",
+        help="Open a report file in the user's preferred editor.",
+    )
+    edit_parser.add_argument("--id", required=True, help="The report ID.")
+
     args = parser.parse_args()
 
     # Set the workspace path before any helpers are called.
@@ -351,6 +382,7 @@ def main() -> int:
         "create": cmd_create,
         "list": cmd_list,
         "get": cmd_get,
+        "edit": cmd_edit,
     }
 
     return handlers[args.command](args, config)
