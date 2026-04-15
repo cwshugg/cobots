@@ -32,6 +32,9 @@ python tasks-cli.py list --status "underway" --show-path
 # Show details of a task.
 python tasks-cli.py get --id "abc123"
 
+# Open a task in your editor.
+python tasks-cli.py edit --id "abc123"
+
 # Update a task's status.
 python tasks-cli.py set-status --id "abc123" --status "done"
 
@@ -67,6 +70,12 @@ Lists all tasks, one per line, showing task ID, creation timestamp, title, and s
 ### `get`
 
 Shows full details of a task: file path, ID, creation timestamp, title, all frontmatter fields, description, and the latest discussion entry.
+
+* `--id` *(required)* - The task ID.
+
+### `edit`
+
+Opens a task file in the user's preferred editor (`$EDITOR`). If the `EDITOR` environment variable is not set, prints an error and exits.
 
 * `--id` *(required)* - The task ID.
 
