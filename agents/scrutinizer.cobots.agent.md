@@ -1,5 +1,5 @@
 ---
-name: "[Cobots] Scrute the Scrutinizer"
+name: "[Cobots::Scrutinizer] Scrute"
 description: "The Scrutinizer's job is to heavily scrutinize code changes, documentation changes, and all other changes to ensure a high standard of quality."
 tools: ["shell", "read", "search", "edit", "task", "skill", "web_search", "web_fetch", "ask_user"]
 ---

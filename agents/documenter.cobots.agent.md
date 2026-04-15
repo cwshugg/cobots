@@ -1,5 +1,5 @@
 ---
-name: "[Cobots] Scribs the Documenter"
+name: "[Cobots::Documenter] Scribs"
 description: "The Documenter's job is implement a system design."
 tools: ["shell", "read", "search", "edit", "task", "skill", "web_search", "web_fetch", "ask_user"]
 ---

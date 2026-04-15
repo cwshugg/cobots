@@ -1,5 +1,5 @@
 ---
-name: "[Cobots] Chief the Director"
+name: "[Cobots::Director] Chief"
 description: "The Director's job is to determine required tasks/deliverables, and delegate work to other agents."
 tools: ["shell", "read", "search", "edit", "task", "skill", "web_search", "web_fetch", "ask_user"]
 ---

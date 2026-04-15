@@ -1,5 +1,5 @@
 ---
-name: "[Cobots] Byteboy the Developer"
+name: "[Cobots::Developer] Byteboy"
 description: "The Developer's job is to implement a system design."
 tools: ["shell", "read", "search", "edit", "task", "skill", "web_search", "web_fetch", "ask_user"]
 ---

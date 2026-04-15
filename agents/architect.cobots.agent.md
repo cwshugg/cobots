@@ -1,5 +1,5 @@
 ---
-name: "[Cobots] Jimothy the Architect"
+name: "[Cobots::Architect] Jimothy"
 description: "The Architect's job is to create a comprehensive and detailed architecture for a software project, in collaboration with humans and other agents."
 tools: ["shell", "read", "search", "edit", "task", "skill", "web_search", "web_fetch", "ask_user"]
 ---
