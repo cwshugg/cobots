@@ -37,6 +37,7 @@ class NtfyConfig:
         token: str | None = None,
         mode: str | None = None,
         confidential_messages: list[dict] | None = None,
+        confidential_titles: list[dict] | None = None,
     ) -> None:
         """Initializes the ntfy configuration with the given or
         default values.
@@ -50,6 +51,10 @@ class NtfyConfig:
             confidential_messages: Optional list of dicts with "key"
                 and "message" fields to override/extend the hardcoded
                 default confidential messages. ``None`` means use the
+                hardcoded defaults.
+            confidential_titles: Optional list of dicts with "key"
+                and "title" fields to override/extend the hardcoded
+                default confidential titles. ``None`` means use the
                 hardcoded defaults.
 
         Raises:
@@ -73,12 +78,16 @@ class NtfyConfig:
         self.confidential_messages: list[dict] | None = (
             confidential_messages
         )
+        self.confidential_titles: list[dict] | None = (
+            confidential_titles
+        )
 
     def to_dict(self) -> dict:
         """Returns the ntfy configuration as a plain dictionary.
 
-        The ``confidential_messages`` key is only included when a
-        custom list has been explicitly set (i.e. not ``None``).
+        The ``confidential_messages`` and ``confidential_titles``
+        keys are only included when a custom list has been explicitly
+        set (i.e. not ``None``).
         """
         result: dict = {
             "url": self.url,
@@ -88,6 +97,8 @@ class NtfyConfig:
         }
         if self.confidential_messages is not None:
             result["confidential_messages"] = self.confidential_messages
+        if self.confidential_titles is not None:
+            result["confidential_titles"] = self.confidential_titles
         return result
 
     @classmethod
@@ -99,6 +110,7 @@ class NtfyConfig:
             token=data.get("token"),
             mode=data.get("mode"),
             confidential_messages=data.get("confidential_messages"),
+            confidential_titles=data.get("confidential_titles"),
         )
 
     def __repr__(self) -> str:

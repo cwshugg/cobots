@@ -52,6 +52,7 @@ def _make_config(
     token: str = "",
     mode: str = "open",
     confidential_messages: list[dict] | None = None,
+    confidential_titles: list[dict] | None = None,
 ) -> CobotsConfig:
     """Creates a CobotsConfig with the given ntfy settings."""
     return CobotsConfig(
@@ -61,6 +62,7 @@ def _make_config(
             token=token,
             mode=mode,
             confidential_messages=confidential_messages,
+            confidential_titles=confidential_titles,
         ),
     )
 
@@ -1232,7 +1234,7 @@ class TestCmdTestWithModes(unittest.TestCase):
         self.assertEqual(result, 0)
         mock_client.send.assert_called_once_with(
             "task_done",
-            title="Cobots Test",
+            title="task_update",
             tags=["white_check_mark"],
         )
 

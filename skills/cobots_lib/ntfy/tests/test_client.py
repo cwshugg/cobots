@@ -353,6 +353,7 @@ class TestNtfyClientSendValidation(unittest.TestCase):
         client._timeout = 30
         client._mode = "open"
         client._confidential_messages = {}
+        client._confidential_titles = {}
         with self.assertRaises(ValueError) as ctx:
             client.send("test")
         self.assertIn("http", str(ctx.exception))
@@ -1137,6 +1138,288 @@ class TestDefaultConfidentialMessages(unittest.TestCase):
                 key, DEFAULT_CONFIDENTIAL_MESSAGES,
                 f"expected key {key!r} not in defaults",
             )
+
+
+# ===================================================================
+# DEFAULT_CONFIDENTIAL_TITLES tests
+# ===================================================================
+
+
+class TestDefaultConfidentialTitles(unittest.TestCase):
+    """Verify the hardcoded default confidential titles."""
+
+    def test_title_count(self) -> None:
+        """Should have between 5 and 15 default titles."""
+        from cobots_lib.ntfy.client import DEFAULT_CONFIDENTIAL_TITLES
+
+        count = len(DEFAULT_CONFIDENTIAL_TITLES)
+        self.assertGreaterEqual(count, 5)
+        self.assertLessEqual(count, 15)
+
+    def test_keys_are_snake_case(self) -> None:
+        """All keys should be snake_case."""
+        import re
+        from cobots_lib.ntfy.client import DEFAULT_CONFIDENTIAL_TITLES
+
+        pattern = re.compile(r"^[a-z][a-z0-9]*(_[a-z0-9]+)*$")
+        for key in DEFAULT_CONFIDENTIAL_TITLES:
+            self.assertRegex(
+                key, pattern,
+                f"key {key!r} is not snake_case",
+            )
+
+    def test_values_are_nonempty_strings(self) -> None:
+        """All display strings should be non-empty."""
+        from cobots_lib.ntfy.client import DEFAULT_CONFIDENTIAL_TITLES
+
+        for key, title in DEFAULT_CONFIDENTIAL_TITLES.items():
+            self.assertIsInstance(title, str)
+            self.assertTrue(
+                title.strip(),
+                f"title for key {key!r} is empty",
+            )
+
+    def test_expected_keys_present(self) -> None:
+        """Certain expected keys should be in the defaults."""
+        from cobots_lib.ntfy.client import DEFAULT_CONFIDENTIAL_TITLES
+
+        expected = [
+            "task_update",
+            "build_update",
+            "test_update",
+            "review_update",
+            "deploy_update",
+            "error_alert",
+            "question",
+            "report",
+            "general",
+        ]
+        for key in expected:
+            self.assertIn(
+                key, DEFAULT_CONFIDENTIAL_TITLES,
+                f"expected key {key!r} not in defaults",
+            )
+
+
+# ===================================================================
+# NtfyClient confidential mode — title validation tests
+# ===================================================================
+
+
+class TestConfidentialTitleValidation(unittest.TestCase):
+    """Verify confidential mode restricts titles to predefined keys."""
+
+    def setUp(self) -> None:
+        self.client = NtfyClient(
+            url="https://ntfy.sh",
+            topic="test",
+            mode="confidential",
+        )
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_valid_title_key_resolves(
+        self, mock_urlopen: MagicMock,
+    ) -> None:
+        """A valid title key is resolved to its display string."""
+        mock_urlopen.return_value = _make_success_response("title001")
+
+        result = self.client.send(
+            "task_done", title="task_update",
+        )
+
+        self.assertTrue(result.success)
+        req = mock_urlopen.call_args[0][0]
+        self.assertEqual(req.get_header("Title"), "Task Update")
+
+    def test_invalid_title_key_raises(self) -> None:
+        """An unrecognized title key raises ValueError."""
+        with self.assertRaises(ValueError) as ctx:
+            self.client.send(
+                "task_done", title="not_a_real_title",
+            )
+        msg = str(ctx.exception)
+        self.assertIn("unknown title key", msg)
+        self.assertIn("not_a_real_title", msg)
+
+    def test_invalid_title_key_lists_valid_keys(self) -> None:
+        """ValueError from invalid title key lists all valid keys."""
+        with self.assertRaises(ValueError) as ctx:
+            self.client.send(
+                "task_done", title="bogus_title",
+            )
+        msg = str(ctx.exception)
+        self.assertIn("task_update", msg)
+        self.assertIn("build_update", msg)
+
+    def test_freeform_title_rejected(self) -> None:
+        """Free-form title text that isn't a key is rejected."""
+        with self.assertRaises(ValueError):
+            self.client.send(
+                "task_done", title="My Free-Form Title",
+            )
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_no_title_allowed(
+        self, mock_urlopen: MagicMock,
+    ) -> None:
+        """Omitting the title is fine in confidential mode."""
+        mock_urlopen.return_value = _make_success_response("notitle")
+
+        result = self.client.send("task_done")
+
+        self.assertTrue(result.success)
+        req = mock_urlopen.call_args[0][0]
+        self.assertIsNone(req.get_header("Title"))
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_none_title_allowed(
+        self, mock_urlopen: MagicMock,
+    ) -> None:
+        """Explicitly passing title=None is fine."""
+        mock_urlopen.return_value = _make_success_response("nonetitle")
+
+        result = self.client.send("task_done", title=None)
+
+        self.assertTrue(result.success)
+        req = mock_urlopen.call_args[0][0]
+        self.assertIsNone(req.get_header("Title"))
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_all_default_title_keys_work(
+        self, mock_urlopen: MagicMock,
+    ) -> None:
+        """Every default predefined title key should send
+        successfully."""
+        from cobots_lib.ntfy.client import DEFAULT_CONFIDENTIAL_TITLES
+
+        mock_urlopen.return_value = _make_success_response()
+        for key in DEFAULT_CONFIDENTIAL_TITLES:
+            result = self.client.send(
+                "task_done", title=key,
+            )
+            self.assertTrue(
+                result.success,
+                f"title key {key!r} failed",
+            )
+
+
+class TestConfidentialCustomTitles(unittest.TestCase):
+    """Verify custom confidential titles override defaults."""
+
+    def setUp(self) -> None:
+        self.custom_titles = {
+            "custom_title_one": "Custom Title One",
+            "custom_title_two": "Custom Title Two",
+        }
+        self.client = NtfyClient(
+            url="https://ntfy.sh",
+            topic="test",
+            mode="confidential",
+            confidential_titles=self.custom_titles,
+        )
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_custom_title_key_works(
+        self, mock_urlopen: MagicMock,
+    ) -> None:
+        """Custom title keys are accepted."""
+        mock_urlopen.return_value = _make_success_response()
+
+        result = self.client.send(
+            "task_done", title="custom_title_one",
+        )
+
+        self.assertTrue(result.success)
+        req = mock_urlopen.call_args[0][0]
+        self.assertEqual(
+            req.get_header("Title"), "Custom Title One",
+        )
+
+    def test_default_title_key_rejected_with_custom(self) -> None:
+        """When custom titles are provided, default keys are not
+        valid."""
+        with self.assertRaises(ValueError):
+            self.client.send(
+                "task_done", title="task_update",
+            )
+
+
+class TestOpenModeTitleNotRestricted(unittest.TestCase):
+    """Verify open mode does not restrict titles."""
+
+    def setUp(self) -> None:
+        self.client = NtfyClient(
+            url="https://ntfy.sh",
+            topic="test",
+            mode="open",
+        )
+
+    @patch("cobots_lib.ntfy.client.urllib.request.urlopen")
+    def test_freeform_title_allowed(
+        self, mock_urlopen: MagicMock,
+    ) -> None:
+        """Open mode accepts free-form title text."""
+        mock_urlopen.return_value = _make_success_response("open001")
+
+        result = self.client.send(
+            "Any message", title="Any Free-Form Title",
+        )
+
+        self.assertTrue(result.success)
+        req = mock_urlopen.call_args[0][0]
+        self.assertEqual(
+            req.get_header("Title"), "Any Free-Form Title",
+        )
+
+
+class TestClosedModeTitleNotChecked(unittest.TestCase):
+    """Verify closed mode refuses before title validation."""
+
+    def setUp(self) -> None:
+        self.client = NtfyClient(
+            url="https://ntfy.sh",
+            topic="test",
+            mode="closed",
+        )
+
+    def test_closed_mode_refuses_before_title_check(self) -> None:
+        """Closed mode returns failure — title is irrelevant."""
+        result = self.client.send(
+            "task_done", title="anything",
+        )
+        self.assertFalse(result.success)
+        self.assertIn("mode=closed", result.error)
+
+
+class TestFromConfigWithTitles(unittest.TestCase):
+    """Verify `from_config` reads confidential_titles."""
+
+    def test_custom_titles_from_config(self) -> None:
+        """Custom titles from config are loaded into the client."""
+        config = CobotsConfig(
+            ntfy=NtfyConfig(
+                topic="t",
+                confidential_titles=[
+                    {"key": "my_title", "title": "My Title"},
+                ],
+            ),
+        )
+        client = NtfyClient.from_config(config)
+        self.assertEqual(
+            client._confidential_titles,
+            {"my_title": "My Title"},
+        )
+
+    def test_none_titles_uses_defaults(self) -> None:
+        """None confidential_titles uses the hardcoded defaults."""
+        from cobots_lib.ntfy.client import DEFAULT_CONFIDENTIAL_TITLES
+
+        config = CobotsConfig(ntfy=NtfyConfig(topic="t"))
+        client = NtfyClient.from_config(config)
+        self.assertEqual(
+            client._confidential_titles,
+            DEFAULT_CONFIDENTIAL_TITLES,
+        )
 
 
 if __name__ == "__main__":

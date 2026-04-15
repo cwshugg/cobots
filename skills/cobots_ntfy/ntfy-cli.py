@@ -27,6 +27,7 @@ from cobots_lib.ntfy.client import (
     PRIORITY_NAMES,
     VALID_PRIORITIES,
     DEFAULT_CONFIDENTIAL_MESSAGES,
+    DEFAULT_CONFIDENTIAL_TITLES,
 )
 
 
@@ -102,8 +103,9 @@ def build_client(config, args: argparse.Namespace) -> NtfyClient:
     """Creates an `NtfyClient` using config values with CLI overrides.
 
     CLI arguments ``--url``, ``--topic``, and ``--token`` take precedence
-    over the values stored in the workspace config. The notification mode
-    and confidential messages are always read from the config.
+    over the values stored in the workspace config. The notification mode,
+    confidential messages, and confidential titles are always read from
+    the config.
 
     Args:
         config: A `CobotsConfig` instance.
@@ -130,12 +132,22 @@ def build_client(config, args: argparse.Namespace) -> NtfyClient:
             for entry in config.ntfy.confidential_messages
         }
 
+    # Convert config's list-of-dicts to a key→title dict, or
+    # None to use the hardcoded defaults.
+    conf_titles: dict[str, str] | None = None
+    if config.ntfy.confidential_titles is not None:
+        conf_titles = {
+            entry["key"]: entry["title"]
+            for entry in config.ntfy.confidential_titles
+        }
+
     return NtfyClient(
         url=url,
         topic=topic,
         token=token,
         mode=mode,
         confidential_messages=conf_msgs,
+        confidential_titles=conf_titles,
     )
 
 
@@ -157,6 +169,26 @@ def resolve_confidential_messages(config) -> dict[str, str]:
             for entry in config.ntfy.confidential_messages
         }
     return dict(DEFAULT_CONFIDENTIAL_MESSAGES)
+
+
+def resolve_confidential_titles(config) -> dict[str, str]:
+    """Resolves the active confidential titles from the config.
+
+    If the config has a custom ``confidential_titles`` list, it is
+    converted to a dict. Otherwise the hardcoded defaults are returned.
+
+    Args:
+        config: A `CobotsConfig` instance.
+
+    Returns:
+        A dict mapping title keys to display strings.
+    """
+    if config.ntfy.confidential_titles is not None:
+        return {
+            entry["key"]: entry["title"]
+            for entry in config.ntfy.confidential_titles
+        }
+    return dict(DEFAULT_CONFIDENTIAL_TITLES)
 
 
 def format_message_table(messages: dict[str, str]) -> str:
@@ -235,9 +267,27 @@ def cmd_send(args: argparse.Namespace, config) -> int:
         print(f"Error: {exc}", file=sys.stderr)
         # In confidential mode, show all available keys on key error.
         if config.ntfy.mode == "confidential":
-            msgs = resolve_confidential_messages(config)
-            print("\nAvailable message keys:", file=sys.stderr)
-            print(format_message_table(msgs), file=sys.stderr)
+            error_text = str(exc)
+            if "message key" in error_text:
+                msgs = resolve_confidential_messages(config)
+                print(
+                    "\nAvailable message keys:",
+                    file=sys.stderr,
+                )
+                print(
+                    format_message_table(msgs),
+                    file=sys.stderr,
+                )
+            elif "title key" in error_text:
+                titles = resolve_confidential_titles(config)
+                print(
+                    "\nAvailable title keys:",
+                    file=sys.stderr,
+                )
+                print(
+                    format_message_table(titles),
+                    file=sys.stderr,
+                )
         return 1
 
     if result.success:
@@ -273,13 +323,15 @@ def cmd_test(args: argparse.Namespace, config) -> int:
     # a free-form test message.
     if config.ntfy.mode == "confidential":
         test_message = "task_done"
+        test_title = "task_update"
     else:
         test_message = "Cobots ntfy test notification"
+        test_title = "Cobots Test"
 
     try:
         result = client.send(
             test_message,
-            title="Cobots Test",
+            title=test_title,
             tags=["white_check_mark"],
         )
     except ValueError as exc:
@@ -326,6 +378,23 @@ def cmd_list_messages(args: argparse.Namespace, config) -> int:
     return 0
 
 
+def cmd_list_titles(args: argparse.Namespace, config) -> int:
+    """Handles the ``list-titles`` subcommand.
+
+    Prints all available predefined title keys and their display text.
+    Uses custom titles from config if set, otherwise the hardcoded
+    defaults.
+    """
+    titles = resolve_confidential_titles(config)
+    if not titles:
+        print("No predefined titles available.")
+        return 0
+
+    print("Available title keys:")
+    print(format_message_table(titles))
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -357,7 +426,10 @@ def main() -> int:
     send_parser.add_argument(
         "--title", "-t",
         default=None,
-        help="Optional notification title.",
+        help=(
+            "Optional notification title (open mode) or "
+            "title key (confidential mode)."
+        ),
     )
     send_parser.add_argument(
         "--priority", "-p",
@@ -428,6 +500,12 @@ def main() -> int:
         help="List available predefined message keys (confidential mode).",
     )
 
+    # -- list-titles --
+    subparsers.add_parser(
+        "list-titles",
+        help="List available predefined title keys (confidential mode).",
+    )
+
     args = parser.parse_args()
 
     # Load workspace configuration.
@@ -438,6 +516,7 @@ def main() -> int:
         "test": cmd_test,
         "show-config": cmd_show_config,
         "list-messages": cmd_list_messages,
+        "list-titles": cmd_list_titles,
     }
 
     return handlers[args.command](args, config)

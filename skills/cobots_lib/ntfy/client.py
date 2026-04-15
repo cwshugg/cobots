@@ -8,9 +8,9 @@ dependencies.
 
 Supports three notification modes:
 
-- **open** — any message content is allowed.
-- **confidential** — only predefined messages (selected by key) are
-  allowed. This prevents leaking sensitive project data.
+- **open** — any message content and title text is allowed.
+- **confidential** — only predefined messages and titles (selected by
+  key) are allowed. This prevents leaking sensitive project data.
 - **closed** — all sends are refused.
 """
 
@@ -95,6 +95,29 @@ DEFAULT_CONFIDENTIAL_MESSAGES: dict[str, str] = {
 
 
 # ---------------------------------------------------------------------------
+# Default confidential titles
+# ---------------------------------------------------------------------------
+
+# Hardcoded predefined titles for confidential mode. Each entry maps
+# a snake_case key to a human-readable display string. When in
+# ``confidential`` mode, only these keys (or custom overrides from
+# config) are accepted as the ``title`` parameter by
+# `NtfyClient.send()`.
+DEFAULT_CONFIDENTIAL_TITLES: dict[str, str] = {
+    "task_update": "Task Update",
+    "build_update": "Build Update",
+    "test_update": "Test Update",
+    "review_update": "Review Update",
+    "deploy_update": "Deployment Update",
+    "pipeline_update": "Pipeline Update",
+    "error_alert": "Error Alert",
+    "question": "Question",
+    "report": "Report",
+    "general": "Notification",
+}
+
+
+# ---------------------------------------------------------------------------
 # NtfyResponse
 # ---------------------------------------------------------------------------
 
@@ -150,9 +173,10 @@ class NtfyClient:
 
     The client operates in one of three modes:
 
-    - **open** — any message content is accepted.
-    - **confidential** — only predefined message keys are accepted.
-      The key is resolved to its display string before sending.
+    - **open** — any message content and title text is accepted.
+    - **confidential** — only predefined message keys and title keys
+      are accepted. Keys are resolved to their display strings before
+      sending.
     - **closed** — all sends are immediately refused.
     """
 
@@ -164,6 +188,7 @@ class NtfyClient:
         timeout: int = DEFAULT_TIMEOUT,
         mode: str = DEFAULT_MODE,
         confidential_messages: dict[str, str] | None = None,
+        confidential_titles: dict[str, str] | None = None,
     ) -> None:
         """Initializes the ntfy client.
 
@@ -177,6 +202,9 @@ class NtfyClient:
             confidential_messages: Optional dict mapping message keys
                 to display strings. If ``None``, the hardcoded
                 `DEFAULT_CONFIDENTIAL_MESSAGES` are used.
+            confidential_titles: Optional dict mapping title keys
+                to display strings. If ``None``, the hardcoded
+                `DEFAULT_CONFIDENTIAL_TITLES` are used.
 
         Raises:
             ValueError: If *url* or *topic* is empty, or *mode* is
@@ -202,13 +230,18 @@ class NtfyClient:
             if confidential_messages is not None
             else dict(DEFAULT_CONFIDENTIAL_MESSAGES)
         )
+        self._confidential_titles: dict[str, str] = (
+            confidential_titles
+            if confidential_titles is not None
+            else dict(DEFAULT_CONFIDENTIAL_TITLES)
+        )
 
     @classmethod
     def from_config(cls, config: "CobotsConfig") -> "NtfyClient":
         """Creates an `NtfyClient` from a `CobotsConfig` object.
 
-        Reads url, topic, token, mode, and confidential_messages
-        from ``config.ntfy``.
+        Reads url, topic, token, mode, confidential_messages, and
+        confidential_titles from ``config.ntfy``.
 
         Args:
             config: A `CobotsConfig` instance (imported from
@@ -229,12 +262,22 @@ class NtfyClient:
                 for entry in ntfy_cfg.confidential_messages
             }
 
+        # Convert config's list-of-dicts to a key→title dict, or
+        # None to use the hardcoded defaults.
+        conf_titles: dict[str, str] | None = None
+        if ntfy_cfg.confidential_titles is not None:
+            conf_titles = {
+                entry["key"]: entry["title"]
+                for entry in ntfy_cfg.confidential_titles
+            }
+
         return cls(
             url=ntfy_cfg.url,
             topic=ntfy_cfg.topic,
             token=ntfy_cfg.token,
             mode=ntfy_cfg.mode,
             confidential_messages=conf_msgs,
+            confidential_titles=conf_titles,
         )
 
     # -----------------------------------------------------------------
@@ -255,10 +298,13 @@ class NtfyClient:
 
         Behavior depends on the client's mode:
 
-        - **open** — *message* is sent as-is.
+        - **open** — *message* and *title* are sent as-is.
         - **confidential** — *message* must be a valid predefined key.
           The key is looked up and the corresponding display string is
-          sent instead.
+          sent instead. If *title* is provided, it must also be a
+          valid predefined title key — it is resolved to the
+          corresponding display string. If *title* is ``None``, no
+          title is sent.
         - **closed** — returns an ``NtfyResponse`` with
           ``success=False`` immediately.
 
@@ -266,7 +312,8 @@ class NtfyClient:
             message: The notification body text (open mode) or a
                 predefined message key (confidential mode). Must be
                 non-empty.
-            title: Optional notification title.
+            title: Optional notification title (open mode) or a
+                predefined title key (confidential mode).
             priority: Optional priority (1–5). ``None`` uses the server
                 default (3).
             tags: Optional list of tag strings (emoji shortcodes, etc.).
@@ -280,7 +327,8 @@ class NtfyClient:
 
         Raises:
             ValueError: If *message* is empty, *priority* is invalid,
-                or (in confidential mode) *message* is not a valid key.
+                or (in confidential mode) *message* is not a valid
+                message key or *title* is not a valid title key.
 
         Note:
             Network and HTTP errors are **never** raised — they are
@@ -316,6 +364,21 @@ class NtfyClient:
                     f"Valid keys: {', '.join(valid_keys)}"
                 )
             message = self._confidential_messages[message]
+
+            # 3b. Validate title key (if provided) against allowed
+            # title keys and resolve to display string.
+            if title is not None:
+                if title not in self._confidential_titles:
+                    valid_title_keys = sorted(
+                        self._confidential_titles.keys()
+                    )
+                    raise ValueError(
+                        f"unknown title key {title!r} "
+                        f"(mode=confidential). "
+                        f"Valid keys: "
+                        f"{', '.join(valid_title_keys)}"
+                    )
+                title = self._confidential_titles[title]
 
         # 4. Priority must be valid (if provided).
         if priority is not None and priority not in VALID_PRIORITIES:
