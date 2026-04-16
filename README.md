@@ -1,7 +1,7 @@
 # cobots
 
-This repository contains my AI tooling setup; all my agent files, instruction files, and skills.
-Most of these, I've written myself (some with the help of AI).
+This repository contains my AI tooling setup; my agent files, instruction files, and skills.
+I've written most of these myself (some with the help of AI).
 Others, I've copied and modified to my liking (I've added notes to each of these).
 This is primarily intended to be used with GitHub Copilot or other AI-assisted coding agent tools.
 
@@ -11,7 +11,6 @@ The name **cobots** comes from one (or all) of these:
 * *Coding Bots*
 * *Collaborating Bots*
 * *Cool Binary Output Technicians*
-* *Coordinated Operating Bots*
 * *Confusing, overthought, binary-optimizing totality*
 * ...alright I'm out of ideas
 
@@ -19,21 +18,86 @@ The name **cobots** comes from one (or all) of these:
 
 So far, the system of agents works like this:
 
-* [The Director](agents/director.cobots.agent.md) understands the goals of a project/problem and comes up with a high-level plan of what tasks are involved, and what other agents should complete them.
-* [The Architect](agents/architect.cobots.agent.md) creates a comprehensive design report on how a software system should be design (or how a problem should be solved).
-* [The Developer](agents/developer.cobots.agent.md) implements the architect's design.
-* [The Scrutinizer](agents/scrutinizer.cobots.agent.md) reviews the implementation (or anything else requested) and suggests improvements to be made.
-* [The Documenter](agents/documenter.cobots.agent.md) writes documentation for the project.
-* [The Researcher](agents/researcher.cobots.agent.md) researches topics and produces research reports.
+```mermaid
+flowchart TD
+    human["🧑 Human"]
+    human --> |Talks to| bot_director
+
+    bot_director["🤖 Director 'Chief'"]
+    bot_director --> |Assigns work| task_researcher
+    bot_director --> |Assigns work| task_architect
+    bot_director --> |Assigns work| task_developer
+    bot_director --> |Assigns work| task_scrutinizer
+    bot_director --> |Assigns work| task_documenter
+
+    task_researcher["📄 Research Task"]
+    task_researcher --> |Assigned to| bot_researcher
+
+    bot_researcher["🤖 Researcher 'Lorey'"]
+    bot_researcher --> |Produces| output_researcher
+
+    output_researcher["📜 Research Report"]
+
+    task_architect["📄 Architecture Task"]
+    task_architect --> |Assigned to| bot_architect
+
+    bot_architect["🤖 Architect 'Planiel'"]
+    bot_architect --> |Produces| output_architect
+
+    output_architect["🏛️  Architecture/Design Document"]
+
+    task_developer["📄 Development Task"]
+    task_developer --> |Assigned to| bot_developer
+
+    bot_developer["🤖 Developer 'Byteboy'"]
+    bot_developer --> |Produces| output_developer
+
+    output_developer["⚙️ Software"]
+
+    task_scrutinizer["📄 Review Task"]
+    task_scrutinizer --> |Assigned to| bot_scrutinizer
+
+    bot_scrutinizer["🤖 Scrutinizer 'Scrute'"]
+    bot_scrutinizer --> |Produces| output_scrutinizer
+
+    output_scrutinizer["🔎 Review of Code/Docs/etc."]
+
+    task_documenter["📄 Documentation Task"]
+    task_documenter --> |Assigned to| bot_documenter
+
+    bot_documenter["🤖 Documenter 'Scribs'"]
+    bot_documenter --> |Produces| output_documenter
+
+    output_documenter["📖 Documentation"]
+```
+
+* [The Director](agents/director.cobots.agent.md) (*Chief*) is the main line of communication to to the human. It seeks to the goals of a project/problem and comes up with a high-level plan of what tasks are involved, then delegates work to other agents to complete them.
+* [The Researcher](agents/researcher.cobots.agent.md) (*Lorey*) researches topics and produces research reports.
+* [The Architect](agents/architect.cobots.agent.md) (*Planiel*) creates comprehensive design reports on how a software system should be design (or how a problem should be solved).
+* [The Developer](agents/developer.cobots.agent.md) (*Byteboy*) implements the architect's design.
+* [The Scrutinizer](agents/scrutinizer.cobots.agent.md) (*Scrute*) reviews the implementation (or anything else requested) and suggests improvements to be made.
+* [The Documenter](agents/documenter.cobots.agent.md) (*Scribs*) writes documentation.
+
+### Tracking Work
 
 The following skills are used by the agents to track work and report progress:
 
 * [Cobots Tasks CLI](skills/cobots_tasks/) - A small CLI tool that creates and manages `*.task.md` files under a working directory.
     * Tasks represent individual items that need completing for the project.
+    * The bots track their work by:
+        * Querying tasks
+        * Assigning them to each other
+        * Updating tasks by adding comments to the file as an ongoing discussion
+        * Mark their statuses as "pending", "underway", "complete", etc.
 * [Cobots Reports CLI](skills/cobots_reports/) - A small CLI tool that creates `*.report.md` files under a working directory.
     * Reports represent write-ups created by the agents, such as architecture plans, code reviews, etc.
 * [Cobots Ntfy CLI](skills/cobots_ntfy/) - A small CLI tool that uses [ntfy.sh](https://ntfy.sh) to send me notifications on agent progress, updates, questions, etc.
-    * By default, it is configured to run in "confidential" mode, meaning that only generic messages can be sent via ntfy.sh (such as "build finished", "waiting for input", etc.).
+    * By default, it is configured to run in "confidential" mode, meaning that only generic messages can be sent via [ntfy.sh](https://ntfy.sh) (such as "build finished", "waiting for input", etc.).
+
+## Installing
+
+To install these agents, simply run the [`install.sh`](./scripts/install.sh) or [`install.ps1`](./scripts/install.ps1) script.
+All agent, instruction, and skill files will be copied to your local `${HOME}/.copilot/` directory.
 
 ## Resources
 
