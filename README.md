@@ -71,7 +71,7 @@ flowchart TD
     output_documenter["📖 Documentation"]
 ```
 
-* [The Director](agents/director.cobots.agent.md) (*Chief*) is the main line of communication to to the human. It seeks to the goals of a project/problem and comes up with a high-level plan of what tasks are involved, then delegates work to other agents to complete them.
+* [The Director](agents/director.cobots.agent.md) (*Chief*) is the main line of communication to to the human. It seeks to understand the goals of a project/problem and comes up with a high-level plan of what tasks are involved, then delegates work to other agents to complete them.
 * [The Researcher](agents/researcher.cobots.agent.md) (*Lorey*) researches topics and produces research reports.
 * [The Architect](agents/architect.cobots.agent.md) (*Planiel*) creates comprehensive design reports on how a software system should be design (or how a problem should be solved).
 * [The Developer](agents/developer.cobots.agent.md) (*Byteboy*) implements the architect's design.
