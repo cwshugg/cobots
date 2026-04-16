@@ -85,10 +85,11 @@ The following skills are used by the agents to track work and report progress:
 * [Cobots Tasks CLI](skills/cobots_tasks/) - A small CLI tool that creates and manages `*.task.md` files under a working directory.
     * Tasks represent individual items that need completing for the project.
     * The bots track their work by:
-        * Querying tasks
+        * Creating tasks
+        * Querying existing tasks
         * Assigning them to each other
         * Updating tasks by adding comments to the file as an ongoing discussion
-        * Mark their statuses as "pending", "underway", "complete", etc.
+        * Marking their statuses as "pending", "underway", "complete", etc.
 * [Cobots Reports CLI](skills/cobots_reports/) - A small CLI tool that creates `*.report.md` files under a working directory.
     * Reports represent write-ups created by the agents, such as architecture plans, code reviews, etc.
 * [Cobots Ntfy CLI](skills/cobots_ntfy/) - A small CLI tool that uses [ntfy.sh](https://ntfy.sh) to send me notifications on agent progress, updates, questions, etc.
