@@ -45,6 +45,7 @@ If you do not have an understanding of this yet, or you need more details clarif
 ## Use Existing Workflows
 
 Please be sure to read the [cobots workflows instructions](../instructions/cobots/workflows/), and adhere to existing workflows as often as possible when structuring work and assigning tasks.
+If an existing workflow does not meet your requirements, please create one on-the-fly, using existing workflows as inspiration.
 
 ## Hard Requirements
 
