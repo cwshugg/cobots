@@ -72,11 +72,13 @@ flowchart TD
 ```
 
 * [The Director](agents/director.cobots.agent.md) (*Chief*) is the main line of communication to to the human. It seeks to understand the goals of a project/problem and comes up with a high-level plan of what tasks are involved, then delegates work to other agents to complete them.
+    * The Director makes use of the [cobots workflow definitions](./instructions/cobots/workflows/), which lay out instructions on how best to structure work and delegate tasks to agents.
 * [The Researcher](agents/researcher.cobots.agent.md) (*Lorey*) researches topics and produces research reports.
 * [The Architect](agents/architect.cobots.agent.md) (*Planiel*) creates comprehensive design reports on how a software system should be design (or how a problem should be solved).
 * [The Developer](agents/developer.cobots.agent.md) (*Byteboy*) implements the architect's design.
 * [The Scrutinizer](agents/scrutinizer.cobots.agent.md) (*Scrute*) reviews the implementation (or anything else requested) and suggests improvements to be made.
 * [The Documenter](agents/documenter.cobots.agent.md) (*Scribs*) writes documentation.
+* [The Security Analyst](agents/secanalyst.cobots.agent.md) (*Vulner*) performs security reviews, looking for vulnerabilities or other security-related concerns.
 
 ### Tracking Work
 
