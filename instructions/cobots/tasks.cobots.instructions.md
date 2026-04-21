@@ -55,5 +55,5 @@ Once the sub-task is complete, return to the original.
 
 ### 5. Send Notifications
 
-When you complete a task, please follow the [notification instructions](./cobots_notifications.instructions.md) to learn how to send a notification to the human.
+When you complete a task, please follow the [notification instructions](./notifications.cobots.instructions.md) to learn how to send a notification to the human.
 

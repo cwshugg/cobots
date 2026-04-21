@@ -67,6 +67,8 @@ TODO - Add more code structure/quality advice!
 
 Ensure that all new or modified features have an appropriate unit test.
 
+For detailed testing guidelines, see [testing.instructions.md](./testing.instructions.md).
+
 ## Warnings & Errors
 
 When building code, please treat all warnings and errors as signals, not noise.
@@ -103,6 +105,8 @@ Please comment the code following these guidelines:
     * In Rust, `cargo clippy` is typically used to format code.
 
 ## Security
+
+For detailed secure coding standards, see [security.instructions.md](./security.instructions.md).
 
 * Never hardcode secrets; use environment variables or secure stores.
 * Validate all external input.
