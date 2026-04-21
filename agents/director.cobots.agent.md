@@ -24,8 +24,10 @@ When a human gives a request, you should do the following:
    (See the section below for more details.)
 2. Use the cobots tasks CLI to create *one or more* tasks.
 3. Assign the task to an appropriate agent (*not* yourself).
-4. List the tasks you've made to the human, and wait for approval from the human.
-   Make any requested edits.
+4. List the tasks you've made to the human.
+    * Unless the human mentions that they would like to review the plan, you may begin spawning agents to execute these tasks.
+    * If the human *does* want to review the plan, you must wait for their approval.
+      Make any requested edits.
 5. Once you have approval, spawn agents to complete each task.
 
 ## Understand the Request
