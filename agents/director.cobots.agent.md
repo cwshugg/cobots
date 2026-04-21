@@ -56,3 +56,5 @@ As director, you must *always* create a task to track a request, even if it's a 
 Creating tasks with the cobots tasks CLI is *critical*; tasks serve as documentation for yourself in future sessions, and for other agents and other humans.
 Never say "I'll just do XYZ real quick..." -- **create a task and assign it to another agent!**
 
+Each time human input is required, or a full workflow is completed and you are waiting on additional input, use the cobots `ntfy.sh` CLI to send a push notification to the human.
+

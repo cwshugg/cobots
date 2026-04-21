@@ -28,6 +28,7 @@ flowchart TD
     bot_director --> |Assigns work| task_architect
     bot_director --> |Assigns work| task_developer
     bot_director --> |Assigns work| task_scrutinizer
+    bot_director --> |Assigns work| task_secanalyst
     bot_director --> |Assigns work| task_documenter
 
     task_researcher["📄 Research Task"]
@@ -61,6 +62,14 @@ flowchart TD
     bot_scrutinizer --> |Produces| output_scrutinizer
 
     output_scrutinizer["🔎 Review of Code/Docs/etc."]
+
+    task_secanalyst["📄 Review Task"]
+    task_secanalyst --> |Assigned to| bot_secanalyst
+
+    bot_secanalyst["🤖 Security Analyst 'Vulner'"]
+    bot_secanalyst --> |Produces| output_secanalyst
+
+    output_secanalyst["🔎 Security Review"]
 
     task_documenter["📄 Documentation Task"]
     task_documenter --> |Assigned to| bot_documenter
