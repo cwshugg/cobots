@@ -40,6 +40,25 @@ def validate_value(value: any) -> bool:
 
 This coding structure reduces complexity in the code, gives it a flatter logic structure, and makes it much more readable.
 
+### Always Define Values - Never Hard-code
+
+In almost every scenario where a constant value (file-scope, global-scope, etc.) is used, such as a string immediate, magic value, or specific integer, *define it as a variable, or macro*.
+For example, in C, if a specific string value is used in production code:
+
+```c
+const int MAGIC_VALUE = 0xabcd1234;
+const char MAGIC_STRING[] = "MY_MAGIC_STRING";
+
+int main()
+{
+    // Do NOT hardcode these values:
+    my_func(0xabcd1234, "MY_MAGIC_STRING");
+
+    // Instead, use appropriately-scoped definitions:
+    my_func(MAGIC_VALUE, MAGIC_STRING);
+}
+```
+
 <!--
 TODO - Add more code structure/quality advice!
 -->
