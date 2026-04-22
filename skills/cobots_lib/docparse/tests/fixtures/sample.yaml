@@ -1,0 +1,10 @@
+name: Sample Config
+version: 2
+settings:
+  debug: true
+  log_level: info
+items:
+  - name: alpha
+    value: 1
+  - name: beta
+    value: 2

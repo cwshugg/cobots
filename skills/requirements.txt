@@ -1,1 +1,11 @@
 pyyaml>=6.0
+
+# docparse - core
+markitdown[pdf,docx,pptx,xlsx,xls,outlook]>=0.1.5
+
+# docparse - gap-filling handlers
+striprtf>=0.0.29
+odfpy>=1.4.1
+
+# docparse - security (transitive dep of markitdown, pinned explicitly)
+defusedxml>=0.7.1

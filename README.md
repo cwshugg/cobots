@@ -106,6 +106,14 @@ The following skills are used by the agents to track work and report progress:
 * [Cobots Ntfy CLI](skills/cobots_ntfy/) - A small CLI tool that uses [ntfy.sh](https://ntfy.sh) to send me notifications on agent progress, updates, questions, etc.
     * By default, it is configured to run in "confidential" mode, meaning that only generic messages can be sent via [ntfy.sh](https://ntfy.sh) (such as "build finished", "waiting for input", etc.).
 
+### Utility Skills
+
+The following skills provide utility capabilities to agents:
+
+* [Cobots Docparse CLI](skills/cobots_docparse/) - A CLI and library for converting documents (PDF, Office, email, markup, data formats, etc.) into readable Markdown or plain text.
+    * Supports 25 file formats via a handler registry built on top of Microsoft's MarkItDown library.
+    * Other skills can import `cobots_lib.docparse` for programmatic document conversion.
+
 ## Installing
 
 To install these agents, simply run the [`install.sh`](./scripts/install.sh) or [`install.ps1`](./scripts/install.ps1) script.
