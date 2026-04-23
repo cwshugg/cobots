@@ -9,3 +9,6 @@ odfpy>=1.4.1
 
 # docparse - security (transitive dep of markitdown, pinned explicitly)
 defusedxml>=0.7.1
+
+# status - interactive TUI
+textual>=1.0,<2.0

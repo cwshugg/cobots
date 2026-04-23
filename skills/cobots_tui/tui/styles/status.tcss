@@ -1,0 +1,59 @@
+/* status.tcss - Textual CSS stylesheet for cobots TUI. */
+
+/* ------------------------------------------------------------------ */
+/* Color palette                                                       */
+/*   Warm Charcoal  #2D2B28  — background                             */
+/*   Parchment      #F5ECD7  — primary text                           */
+/*   Cerulean       #227C9D  — accent 1 (links, cool tones, done)     */
+/*   Apricot Cream  #FFCB77  — accent 2 (warm highlights)             */
+/*   Grapefruit     #FE6D73  — accent 3 (alerts, emphasis)            */
+/* ------------------------------------------------------------------ */
+
+Screen {
+    layout: vertical;
+    background: #2D2B28;
+    color: #F5ECD7;
+}
+
+Header {
+    background: #227C9D;
+    color: #F5ECD7;
+}
+
+Footer {
+    background: #2D2B28;
+    color: #F5ECD7;
+}
+
+SummaryBar {
+    height: 3;
+    dock: top;
+    background: #2D2B28;
+    color: #F5ECD7;
+}
+
+TabbedContent {
+    height: 1fr;
+}
+
+TabPane {
+    background: #2D2B28;
+}
+
+ActivityLog {
+    height: auto;
+    max-height: 12;
+    dock: bottom;
+    background: #2D2B28;
+    color: #F5ECD7;
+}
+
+DataTable {
+    background: #2D2B28;
+    color: #F5ECD7;
+}
+
+DataTable > .datatable--cursor {
+    background: #227C9D;
+    color: #F5ECD7;
+}

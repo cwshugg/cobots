@@ -120,6 +120,64 @@ class NtfyConfig:
         return f"NtfyConfig({safe!r})"
 
 
+class StatusConfig:
+    """Configuration for the cobots status skill.
+
+    Holds refresh rate and activity count settings.
+    Follows the same *structure* as ``NtfyConfig`` but uses defensive
+    clamping instead of raising on invalid input — the status skill should
+    never crash on bad configuration data.
+    """
+
+    DEFAULT_REFRESH_RATE: int = 5       # seconds (matches requirements)
+    DEFAULT_ACTIVITY_COUNT: int = 20
+    MIN_REFRESH_RATE: int = 2
+    MAX_REFRESH_RATE: int = 3600
+    MIN_ACTIVITY_COUNT: int = 1
+    MAX_ACTIVITY_COUNT: int = 100
+
+    def __init__(
+        self,
+        refresh_rate: int | None = None,
+        activity_count: int | None = None,
+    ) -> None:
+        raw_rate = refresh_rate if refresh_rate is not None else self.DEFAULT_REFRESH_RATE
+        try:
+            raw_rate_int = int(raw_rate)
+        except (ValueError, TypeError):
+            raw_rate_int = self.DEFAULT_REFRESH_RATE
+        self.refresh_rate: int = max(
+            self.MIN_REFRESH_RATE, min(raw_rate_int, self.MAX_REFRESH_RATE)
+        )
+
+        raw_count = activity_count if activity_count is not None else self.DEFAULT_ACTIVITY_COUNT
+        try:
+            raw_count_int = int(raw_count)
+        except (ValueError, TypeError):
+            raw_count_int = self.DEFAULT_ACTIVITY_COUNT
+        self.activity_count: int = max(
+            self.MIN_ACTIVITY_COUNT, min(raw_count_int, self.MAX_ACTIVITY_COUNT)
+        )
+
+    def to_dict(self) -> dict:
+        """Returns the status configuration as a plain dictionary."""
+        return {
+            "refresh_rate": self.refresh_rate,
+            "activity_count": self.activity_count,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "StatusConfig":
+        """Creates a ``StatusConfig`` from a plain dictionary."""
+        return cls(
+            refresh_rate=data.get("refresh_rate"),
+            activity_count=data.get("activity_count"),
+        )
+
+    def __repr__(self) -> str:
+        return f"StatusConfig({self.to_dict()!r})"
+
+
 class CobotsConfig:
     """Represents the cobots configuration.
 
@@ -143,6 +201,7 @@ class CobotsConfig:
         report_id_length: int | None = None,
         ntfy: "NtfyConfig | None" = None,
         workspace_name: str = "",
+        status: "StatusConfig | None" = None,
     ) -> None:
         """Initializes the configuration with the given or default values."""
         self.task_status_values = (
@@ -162,6 +221,7 @@ class CobotsConfig:
         )
         self.ntfy = ntfy if ntfy is not None else NtfyConfig()
         self.workspace_name: str = workspace_name
+        self.status = status if status is not None else StatusConfig()
 
     def to_dict(self) -> dict:
         """Returns the configuration as a plain dictionary."""
@@ -171,6 +231,7 @@ class CobotsConfig:
             "task_id_length": self.task_id_length,
             "report_id_length": self.report_id_length,
             "ntfy": self.ntfy.to_dict(),
+            "status": self.status.to_dict(),
         }
 
     def to_yaml(self) -> str:
@@ -191,6 +252,7 @@ class CobotsConfig:
             report_id_length=data.get("report_id_length"),
             ntfy=NtfyConfig.from_dict(data.get("ntfy", {})),
             workspace_name=data.get("workspace_name", ""),
+            status=StatusConfig.from_dict(data.get("status", {})),
         )
         return config
 

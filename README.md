@@ -106,6 +106,13 @@ The following skills are used by the agents to track work and report progress:
 * [Cobots Ntfy CLI](skills/cobots_ntfy/) - A small CLI tool that uses [ntfy.sh](https://ntfy.sh) to send me notifications on agent progress, updates, questions, etc.
     * By default, it is configured to run in "confidential" mode, meaning that only generic messages can be sent via [ntfy.sh](https://ntfy.sh) (such as "build finished", "waiting for input", etc.).
 
+### Monitoring
+
+* [Cobots TUI](skills/cobots_tui/) - An interactive TUI dashboard for the cobots workspace.
+    * Provides an interactive Textual TUI (default) and a `--show-overview` flag for a static Rich-formatted snapshot.
+    * Humans use the TUI to browse tasks and reports, view/edit items, and monitor workspace activity with auto-refresh.
+    * Use `cobots-tui --show-overview` for a quick non-interactive snapshot.
+
 ### Utility Skills
 
 The following skills provide utility capabilities to agents:
