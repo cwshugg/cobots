@@ -56,7 +56,7 @@ def _build_task_table(snapshot: StatusSnapshot) -> Table:
             sanitize_display_text(task.id[:10]),
             status_text,
             sanitize_display_text(task.title),
-            sanitize_display_text(task.owner or "(unassigned)"),
+            sanitize_display_text((task.owner or "(unassigned)").lower()),
             sanitize_display_text(task.created_timestamp),
         )
     return table

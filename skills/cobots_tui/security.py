@@ -13,7 +13,6 @@ Security constraints enforced:
 """
 
 import os
-import re
 import shutil
 
 

@@ -7,6 +7,7 @@
 /*   Cerulean       #227C9D  — accent 1 (links, cool tones, done)     */
 /*   Apricot Cream  #FFCB77  — accent 2 (warm highlights)             */
 /*   Grapefruit     #FE6D73  — accent 3 (alerts, emphasis)            */
+/*   Dim Parchment  #8A8478  — muted text, abandoned status           */
 /* ------------------------------------------------------------------ */
 
 Screen {
@@ -38,11 +39,12 @@ TabbedContent {
 
 TabPane {
     background: #2D2B28;
+    height: 1fr;
 }
 
 ActivityLog {
     height: auto;
-    max-height: 12;
+    max-height: 15;
     dock: bottom;
     background: #2D2B28;
     color: #F5ECD7;
@@ -56,4 +58,113 @@ DataTable {
 DataTable > .datatable--cursor {
     background: #227C9D;
     color: #F5ECD7;
+}
+
+/* ================================================================ */
+/* Overview tab                                                      */
+/* ================================================================ */
+
+OverviewPane {
+    layout: grid;
+    grid-size: 2;
+    grid-columns: 1fr 1fr;
+    grid-gutter: 0;
+    padding: 0;
+    overflow-y: auto;
+    height: 1fr;
+}
+
+/* --- KPI Panel (full-width hero section) --- */
+
+KpiPanel {
+    column-span: 2;
+    height: auto;
+    max-height: 10;
+    padding: 0 1;
+    margin: 0;
+    border: round #8A8478;
+    border-title-color: #F5ECD7;
+}
+
+#kpi-row {
+    height: auto;
+    align-horizontal: center;
+}
+
+.kpi-card {
+    width: 1fr;
+    height: auto;
+    align: center middle;
+    content-align: center middle;
+    padding: 0 1;
+}
+
+.kpi-label {
+    text-align: center;
+    text-style: bold;
+    color: #8A8478;
+    width: 100%;
+    height: 1;
+}
+
+Digits {
+    text-align: center;
+    width: 100%;
+}
+
+#kpi-completion-bar {
+    height: 1;
+    padding: 0 1;
+    content-align: center middle;
+}
+
+/* --- Charts (left column) --- */
+
+StatusChart {
+    height: auto;
+    min-height: 4;
+    padding: 0 1;
+    margin: 0;
+    border: round #8A8478;
+    border-title-color: #F5ECD7;
+}
+
+OwnerChart {
+    height: auto;
+    min-height: 4;
+    padding: 0 1;
+    margin: 0;
+    border: round #8A8478;
+    border-title-color: #F5ECD7;
+}
+
+/* --- Lists (right column) --- */
+
+ActiveTasksList {
+    height: auto;
+    min-height: 4;
+    padding: 0 1;
+    margin: 0;
+    border: round #8A8478;
+    border-title-color: #F5ECD7;
+}
+
+RecentReportsList {
+    height: auto;
+    min-height: 4;
+    padding: 0 1;
+    margin: 0;
+    border: round #8A8478;
+    border-title-color: #F5ECD7;
+}
+
+/* --- Activity Feed (full-width bottom) --- */
+
+ActivityFeedWidget {
+    column-span: 2;
+    height: auto;
+    max-height: 8;
+    padding: 0 1;
+    border: round #8A8478;
+    border-title-color: #F5ECD7;
 }

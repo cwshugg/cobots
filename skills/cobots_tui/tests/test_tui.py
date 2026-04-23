@@ -104,7 +104,9 @@ class TestArrowKeyNavigation(unittest.TestCase):
                     activity_count=5,
                 )
                 async with app.run_test(size=(120, 40)) as pilot:
-                    # Allow call_later to fire.
+                    # Switch from Overview to Tasks tab, then verify
+                    # DataTable receives focus.
+                    await pilot.press("l")
                     await pilot.pause()
                     await pilot.pause()
                     focused = app.focused

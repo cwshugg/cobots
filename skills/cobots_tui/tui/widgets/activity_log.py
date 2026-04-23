@@ -7,7 +7,7 @@ scrollable Static widget.
 
 from textual.widgets import Static
 
-from constants import CERULEAN, APRICOT_CREAM, GRAPEFRUIT
+from constants import CERULEAN, APRICOT_CREAM, GRAPEFRUIT, DIM_PARCHMENT
 from data import StatusSnapshot
 from security import sanitize_display_text
 
@@ -25,7 +25,7 @@ class ActivityLog(Static):
     DEFAULT_CSS = """
     ActivityLog {
         height: auto;
-        max-height: 12;
+        max-height: 15;
         padding: 0 1;
         overflow-y: auto;
     }
@@ -37,10 +37,11 @@ class ActivityLog(Static):
             self.update("[dim](no recent activity)[/dim]")
             return
 
-        lines: list[str] = ["[bold]Recent Activity[/bold]"]
+        lines: list[str] = [f"[bold {DIM_PARCHMENT}]━━ Recent Activity ━━[/]"]
         for event in snapshot.activity_timeline:
             label, color = EVENT_STYLES.get(
-                event.event_type, (event.event_type, "white")
+                event.event_type,
+                (sanitize_display_text(event.event_type), "white"),
             )
             lines.append(
                 f"  {sanitize_display_text(event.timestamp)}  "

@@ -35,3 +35,17 @@ STATUS_COLORS: dict[str, str] = {
     "done": CERULEAN,
     "abandoned": DIM_PARCHMENT,
 }
+
+# Statuses that represent completed/terminal work.
+# "Active" tasks are those whose status is NOT in this set.
+COMPLETED_STATUSES: frozenset[str] = frozenset({"done", "abandoned"})
+
+
+def get_status_color(status: str) -> str:
+    """Returns the palette color for *status*, falling back to PARCHMENT.
+
+    This avoids hardcoding ``STATUS_COLORS[status]`` lookups throughout
+    the widget layer — unknown/custom statuses gracefully degrade to the
+    primary text color.
+    """
+    return STATUS_COLORS.get(status, PARCHMENT)

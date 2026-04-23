@@ -70,12 +70,15 @@ class CobotsStatusApp(App):
     def compose(self) -> ComposeResult:
         yield Header()
         from tui.widgets.summary_bar import SummaryBar
+        from tui.widgets.overview.overview_pane import OverviewPane
         from tui.widgets.task_table import TaskTable
         from tui.widgets.report_table import ReportTable
         from tui.widgets.activity_log import ActivityLog
 
         yield SummaryBar()
-        with TabbedContent("Tasks", "Reports"):
+        with TabbedContent("Overview", "Tasks", "Reports"):
+            with TabPane("Overview", id="tab-overview"):
+                yield OverviewPane()
             with TabPane("Tasks", id="tab-tasks"):
                 yield TaskTable()
             with TabPane("Reports", id="tab-reports"):
@@ -90,6 +93,13 @@ class CobotsStatusApp(App):
             self._refresh_timer = self.set_interval(
                 self.refresh_rate, self._do_refresh
             )
+        # Hide ActivityLog when terminal height is 40 or below.
+        from tui.widgets.activity_log import ActivityLog
+        try:
+            activity_log = self.query_one(ActivityLog)
+            activity_log.display = self.size.height > 40
+        except Exception:
+            pass
         # Auto-focus the DataTable in the active tab so arrow keys work
         # immediately without requiring the user to click or Tab first.
         self.call_later(self._focus_active_table)
@@ -115,11 +125,18 @@ class CobotsStatusApp(App):
         if snap is None:
             return
         from textual.css.query import NoMatches
+        from tui.widgets.overview.overview_pane import OverviewPane
         from tui.widgets.summary_bar import SummaryBar
         from tui.widgets.task_table import TaskTable
         from tui.widgets.report_table import ReportTable
         from tui.widgets.activity_log import ActivityLog
 
+        try:
+            self.query_one(OverviewPane).update_from_snapshot(snap)
+        except NoMatches:
+            pass
+        except Exception as exc:
+            warnings.warn(f"Failed to update OverviewPane: {exc}")
         try:
             self.query_one(SummaryBar).update_from_snapshot(snap)
         except NoMatches:
@@ -157,13 +174,33 @@ class CobotsStatusApp(App):
         """Focus the first DataTable inside the currently active tab pane.
 
         This ensures arrow keys (and vim ``j``/``k``) work immediately
-        after the app starts and after every tab switch.
+        after the app starts and after every tab switch.  The Overview
+        tab has no DataTable, so focus falls back to its OverviewPane.
         """
         try:
             tc = self.query_one(TabbedContent)
             pane = tc.get_pane(tc.active)
-            table = pane.query_one(DataTable)
-            table.focus()
+            try:
+                table = pane.query_one(DataTable)
+                table.focus()
+            except Exception:
+                # Overview tab has no DataTable; focus the pane
+                # (OverviewPane) so the user can scroll with arrow keys.
+                from tui.widgets.overview.overview_pane import OverviewPane
+                try:
+                    overview = pane.query_one(OverviewPane)
+                    overview.focus()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    def on_resize(self, event) -> None:
+        """Hide ActivityLog when terminal height is 40 or below."""
+        from tui.widgets.activity_log import ActivityLog
+        try:
+            activity_log = self.query_one(ActivityLog)
+            activity_log.display = event.size.height > 40
         except Exception:
             pass
 

@@ -123,6 +123,7 @@ def make_snapshot(**kwargs) -> StatusSnapshot:
         "task_counts_by_owner": types.MappingProxyType({}),
         "report_count": 0,
         "activity_timeline": (),
+        "sparkline_events": (),
         "snapshot_timestamp": "2026-04-22 12:00:00",
     }
     defaults.update(kwargs)

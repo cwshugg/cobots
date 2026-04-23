@@ -26,6 +26,7 @@ from venv.venv import activate_venv
 activate_venv()
 
 from config import load_status_config
+from cobots_lib.workspace.config import StatusConfig
 
 
 # ---------------------------------------------------------------------------
@@ -78,6 +79,32 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def clamp_cli_args(
+    args: argparse.Namespace,
+    status_config,
+) -> None:
+    """Applies config defaults and clamps explicit CLI values.
+
+    Mutates *args* in-place so that ``activity_count`` and
+    ``refresh_rate`` are within the bounds enforced by
+    :class:`StatusConfig`.
+    """
+    if args.activity_count is None:
+        args.activity_count = status_config.activity_count
+    else:
+        args.activity_count = max(
+            StatusConfig.MIN_ACTIVITY_COUNT,
+            min(args.activity_count, StatusConfig.MAX_ACTIVITY_COUNT),
+        )
+    if args.refresh_rate is None:
+        args.refresh_rate = status_config.refresh_rate
+    else:
+        args.refresh_rate = max(
+            StatusConfig.MIN_REFRESH_RATE,
+            min(args.refresh_rate, StatusConfig.MAX_REFRESH_RATE),
+        )
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -92,26 +119,8 @@ def main() -> None:
         getattr(args, "workspace_path", None)
     )
 
-    # Apply config defaults for CLI args not explicitly provided.
-    # When values are explicitly provided, clamp them to the same bounds
-    # that StatusConfig enforces — prevents extreme values like
-    # --refresh-rate 1 (disk I/O every second) or --activity-count 999999.
-    if args.activity_count is None:
-        args.activity_count = status_config.activity_count
-    else:
-        from cobots_lib.workspace.config import StatusConfig
-        args.activity_count = max(
-            StatusConfig.MIN_ACTIVITY_COUNT,
-            min(args.activity_count, StatusConfig.MAX_ACTIVITY_COUNT),
-        )
-    if args.refresh_rate is None:
-        args.refresh_rate = status_config.refresh_rate
-    else:
-        from cobots_lib.workspace.config import StatusConfig
-        args.refresh_rate = max(
-            StatusConfig.MIN_REFRESH_RATE,
-            min(args.refresh_rate, StatusConfig.MAX_REFRESH_RATE),
-        )
+    # Apply config defaults and clamp explicit CLI values.
+    clamp_cli_args(args, status_config)
 
     if args.show_overview:
         from modes.rich_mode import run_rich

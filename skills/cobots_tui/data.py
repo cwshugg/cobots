@@ -94,6 +94,7 @@ class StatusSnapshot:
     report_count: int
     activity_timeline: tuple[ActivityEvent, ...]
     snapshot_timestamp: str
+    sparkline_events: tuple[ActivityEvent, ...] = ()
 
     def status_counts_dict(self) -> dict[str, int]:
         """Returns ``task_counts_by_status`` as a plain ``dict``.
@@ -348,12 +349,16 @@ def load_snapshot(
     # --- Aggregations ---
     status_counter: Counter[str] = Counter(t.status for t in tasks)
     owner_counter: Counter[str] = Counter(
-        t.owner or "(unassigned)" for t in tasks
+        (t.owner or "(unassigned)").lower() for t in tasks
     )
 
     # --- Activity timeline ---
     timeline = build_activity_timeline(
         tasks, reports, workspace_root, count=activity_count
+    )
+    # Sparkline (uncapped — all events for 30-day bucketing)
+    sparkline_timeline = build_activity_timeline(
+        tasks, reports, workspace_root, count=10000
     )
 
     # --- Timestamp ---
@@ -368,5 +373,6 @@ def load_snapshot(
         task_counts_by_owner=types.MappingProxyType(dict(owner_counter)),
         report_count=len(reports),
         activity_timeline=timeline,
+        sparkline_events=sparkline_timeline,
         snapshot_timestamp=now,
     )

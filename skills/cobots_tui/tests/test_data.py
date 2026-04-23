@@ -384,3 +384,91 @@ class TestSnapshotSortDescending(unittest.TestCase):
             snap = load_snapshot(workspace_path=ws)
             self.assertEqual(len(snap.tasks), 0)
             self.assertEqual(len(snap.reports), 0)
+
+
+class TestSparklineEventsField(unittest.TestCase):
+    """sparkline_events contains all events uncapped for sparkline display."""
+
+    def test_sparkline_events_default_empty(self) -> None:
+        """StatusSnapshot constructed without sparkline_events defaults to ()."""
+        snap = StatusSnapshot(
+            workspace_name="w", workspace_root="/w",
+            tasks=(), reports=(),
+            task_counts_by_status=types.MappingProxyType({}),
+            task_counts_by_owner=types.MappingProxyType({}),
+            report_count=0, activity_timeline=(),
+            snapshot_timestamp="now",
+        )
+        self.assertEqual(snap.sparkline_events, ())
+
+    def test_sparkline_events_uncapped_vs_activity_timeline_capped(self) -> None:
+        """sparkline_events has all events while activity_timeline is capped."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = create_mock_workspace(tmp)
+            tasks_dir = os.path.join(ws, "tasks")
+
+            for i in range(10):
+                write_task_file(
+                    tasks_dir,
+                    task_id=f"sparkle{i:010d}",
+                    created_timestamp=f"2026-01-{i+1:02d} 00:00:00",
+                )
+
+            snap = load_snapshot(workspace_path=ws, activity_count=3)
+            # activity_timeline is capped at 3
+            self.assertLessEqual(len(snap.activity_timeline), 3)
+            # sparkline_events should contain ALL events (at least 10)
+            self.assertGreaterEqual(len(snap.sparkline_events), 10)
+
+    def test_sparkline_events_populated_on_load(self) -> None:
+        """load_snapshot populates sparkline_events for a workspace with data."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = create_mock_workspace(tmp)
+            tasks_dir = os.path.join(ws, "tasks")
+            reports_dir = os.path.join(ws, "reports")
+
+            write_task_file(tasks_dir, task_id="sparktask00000001")
+            write_report_file(reports_dir, report_id="sparkrpt000000001")
+
+            snap = load_snapshot(workspace_path=ws)
+            # Should have at least 2 events (1 task created + 1 report created)
+            self.assertGreaterEqual(len(snap.sparkline_events), 2)
+
+
+class TestOwnerNormalization(unittest.TestCase):
+    """Owner names are normalized to lowercase in aggregation counts."""
+
+    def test_owner_counts_lowercase(self) -> None:
+        """Mixed-case owners are merged under lowercase keys."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = create_mock_workspace(tmp)
+            tasks_dir = os.path.join(ws, "tasks")
+
+            write_task_file(tasks_dir, task_id="owntest000000001",
+                          owner="Alice")
+            write_task_file(tasks_dir, task_id="owntest000000002",
+                          owner="alice")
+            write_task_file(tasks_dir, task_id="owntest000000003",
+                          owner="ALICE")
+
+            snap = load_snapshot(workspace_path=ws)
+            owner_counts = snap.owner_counts_dict()
+
+            # All three should be merged under "alice"
+            self.assertEqual(owner_counts.get("alice"), 3)
+            # No uppercase variants should exist
+            self.assertNotIn("Alice", owner_counts)
+            self.assertNotIn("ALICE", owner_counts)
+
+    def test_unassigned_owner_lowercase(self) -> None:
+        """Tasks with no owner are counted as '(unassigned)'."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = create_mock_workspace(tmp)
+            tasks_dir = os.path.join(ws, "tasks")
+
+            write_task_file(tasks_dir, task_id="noown00000000001",
+                          owner="")
+
+            snap = load_snapshot(workspace_path=ws)
+            owner_counts = snap.owner_counts_dict()
+            self.assertIn("(unassigned)", owner_counts)
