@@ -23,7 +23,7 @@ class OverviewPane(Widget):
     """CSS-grid container for the Overview dashboard tab.
 
     Layout is defined in ``status.tcss`` (2-column grid with
-    full-width hero and sparkline rows).
+    full-width hero and activity feed rows).
     """
 
     can_focus = True

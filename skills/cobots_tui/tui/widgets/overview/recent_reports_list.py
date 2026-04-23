@@ -18,11 +18,10 @@ MAX_DISPLAY: int = 5
 class RecentReportsList(Static):
     """Compact Rich-text list of the most recent workspace reports."""
 
-    _last_snapshot: StatusSnapshot | None = None
-
     def __init__(self, **kwargs) -> None:
         super().__init__("[dim]Loading…[/dim]", **kwargs)
         self.border_title = "Recent Reports"
+        self._last_snapshot: StatusSnapshot | None = None
 
     def update_from_snapshot(self, snap: StatusSnapshot) -> None:
         """Rebuilds the list from the current snapshot."""

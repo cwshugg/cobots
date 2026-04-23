@@ -8,34 +8,9 @@ to PARCHMENT for unknown/custom statuses.
 
 from textual.widgets import Static
 
-from constants import DIM_PARCHMENT, get_status_color
+from constants import get_status_color
 from data import StatusSnapshot
-from security import sanitize_display_text
-
-# Character width of the filled+empty bar area.
-BAR_WIDTH: int = 25
-
-
-def _render_bar(
-    label: str, value: int, max_val: int, color: str
-) -> str:
-    """Returns a single Rich-markup bar line.
-
-    Args:
-        label:   Status name (will be sanitized).
-        value:   Count for this status.
-        max_val: Maximum count across all statuses (for scaling).
-        color:   Rich color string for the filled portion.
-    """
-    filled = int((value / max_val) * BAR_WIDTH) if max_val > 0 else 0
-    empty = BAR_WIDTH - filled
-    safe_label = sanitize_display_text(label)
-    return (
-        f"  {safe_label:<12}"
-        f"[{color}]{'█' * filled}[/{color}]"
-        f"[{DIM_PARCHMENT}]{'░' * empty}[/{DIM_PARCHMENT}]"
-        f" {value}"
-    )
+from tui.widgets.overview._chart_utils import render_bar, BAR_WIDTH, LABEL_WIDTH
 
 
 class StatusChart(Static):
@@ -48,9 +23,12 @@ class StatusChart(Static):
     def __init__(self, **kwargs) -> None:
         super().__init__("[dim]Loading…[/dim]", **kwargs)
         self.border_title = "Status Breakdown"
+        self._last_snapshot: StatusSnapshot | None = None
 
     def update_from_snapshot(self, snap: StatusSnapshot) -> None:
         """Rebuilds the chart from the current snapshot."""
+        self._last_snapshot = snap
+
         counts = snap.status_counts_dict()
         if not counts:
             self.update("[dim](no tasks)[/dim]")
@@ -62,9 +40,20 @@ class StatusChart(Static):
         )
         max_val = sorted_items[0][1] if sorted_items else 1
 
+        dynamic_width = (
+            max(10, self.size.width - LABEL_WIDTH - 8)
+            if self.size.width > 0
+            else BAR_WIDTH
+        )
+
         lines: list[str] = []
         for status, count in sorted_items:
             color = get_status_color(status)
-            lines.append(_render_bar(status, count, max_val, color))
+            lines.append(render_bar(status, count, max_val, color, bar_width=dynamic_width))
 
         self.update("\n".join(lines))
+
+    def on_resize(self, event) -> None:
+        """Re-render on resize to adjust bar width."""
+        if self._last_snapshot is not None:
+            self.update_from_snapshot(self._last_snapshot)

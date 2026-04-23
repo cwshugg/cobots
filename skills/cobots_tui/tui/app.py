@@ -31,6 +31,8 @@ class CobotsStatusApp(App):
         Binding("v", "view_item", "View"),
         Binding("h", "previous_tab", "← Tab"),
         Binding("l", "next_tab", "Tab →"),
+        Binding("left", "previous_tab", "← Tab", show=False),
+        Binding("right", "next_tab", "Tab →", show=False),
         Binding("tab", "focus_next", "Next Panel", show=False),
         Binding("shift+tab", "focus_previous", "Prev Panel", show=False),
     ]
@@ -192,8 +194,8 @@ class CobotsStatusApp(App):
                     overview.focus()
                 except Exception:
                     pass
-        except Exception:
-            pass
+        except Exception as exc:
+            warnings.warn(f"Focus/nav error: {exc}")
 
     def on_resize(self, event) -> None:
         """Hide ActivityLog when terminal height is 40 or below."""
@@ -224,8 +226,8 @@ class CobotsStatusApp(App):
             current = tc.active
             idx = pane_ids.index(current) if current in pane_ids else 0
             tc.active = pane_ids[(idx - 1) % len(pane_ids)]
-        except Exception:
-            pass
+        except Exception as exc:
+            warnings.warn(f"Focus/nav error: {exc}")
 
     def action_next_tab(self) -> None:
         """Switch to the next tab (bound to 'l' key)."""
@@ -237,8 +239,8 @@ class CobotsStatusApp(App):
             current = tc.active
             idx = pane_ids.index(current) if current in pane_ids else 0
             tc.active = pane_ids[(idx + 1) % len(pane_ids)]
-        except Exception:
-            pass
+        except Exception as exc:
+            warnings.warn(f"Focus/nav error: {exc}")
 
     def _get_selected_item(self) -> TaskData | ReportData | None:
         """Returns the currently selected task or report based on active tab."""
@@ -296,13 +298,13 @@ class CobotsStatusApp(App):
             self._refresh_timer.pause()
         try:
             with self.suspend():
-                result = subprocess.run(editor_parts + [validated_path])
+                result = subprocess.run(editor_parts + [validated_path], timeout=28800)
             if result.returncode != 0:
                 self.notify(
                     f"{editor_parts[0]} exited with code {result.returncode}",
                     severity="warning",
                 )
-        except (FileNotFoundError, OSError) as exc:
+        except (FileNotFoundError, OSError, subprocess.TimeoutExpired) as exc:
             self.notify(f"Failed to launch editor: {exc}", severity="error")
         finally:
             if self._refresh_timer:
@@ -334,13 +336,13 @@ class CobotsStatusApp(App):
             self._refresh_timer.pause()
         try:
             with self.suspend():
-                result = subprocess.run(pager_parts + [validated_path])
+                result = subprocess.run(pager_parts + [validated_path], timeout=28800)
             if result.returncode != 0:
                 self.notify(
                     f"{pager_parts[0]} exited with code {result.returncode}",
                     severity="warning",
                 )
-        except (FileNotFoundError, OSError) as exc:
+        except (FileNotFoundError, OSError, subprocess.TimeoutExpired) as exc:
             self.notify(f"Failed to launch pager: {exc}", severity="error")
         finally:
             if self._refresh_timer:

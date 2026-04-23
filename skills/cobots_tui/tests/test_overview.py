@@ -12,7 +12,7 @@ import sys
 import tempfile
 import types
 import unittest
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 # ---------------------------------------------------------------------------
 # Bootstrap

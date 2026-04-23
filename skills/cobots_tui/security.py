@@ -14,6 +14,12 @@ Security constraints enforced:
 
 import os
 import shutil
+import warnings
+
+# Known safe editors/pagers for the allowlist warning.
+_KNOWN_EDITORS: frozenset[str] = frozenset({
+    "vim", "nvim", "nano", "emacs", "vi", "code", "less", "more", "bat", "cat", "view",
+})
 
 
 def validate_path_within_workspace(candidate: str, workspace_root: str) -> str:
@@ -66,4 +72,7 @@ def validate_editor(editor_env: str) -> list[str] | None:
         return None
     if not parts or not shutil.which(parts[0]):
         return None
+    binary_name = os.path.basename(parts[0])
+    if binary_name not in _KNOWN_EDITORS:
+        warnings.warn(f"Uncommon editor/pager: {binary_name}")
     return parts

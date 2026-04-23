@@ -5,6 +5,8 @@ Displays three Digits widgets (TASKS, ACTIVE, REPORTS) in a horizontal
 row, plus a single-line completion progress bar below them.
 """
 
+import warnings
+
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widget import Widget
@@ -28,6 +30,7 @@ class KpiPanel(Widget):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.border_title = "Dashboard"
+        self._last_snapshot: StatusSnapshot | None = None
 
     def compose(self) -> ComposeResult:
         """Yields the KPI row and completion bar."""
@@ -45,6 +48,8 @@ class KpiPanel(Widget):
 
     def update_from_snapshot(self, snap: StatusSnapshot) -> None:
         """Refreshes all KPI values from the current snapshot."""
+        self._last_snapshot = snap
+
         counts = snap.status_counts_dict()
         total = len(snap.tasks)
 
@@ -65,8 +70,8 @@ class KpiPanel(Widget):
         # Update Digits widgets.
         try:
             self.query_one("#kpi-total-tasks", Digits).update(str(total))
-        except Exception:
-            pass
+        except Exception as exc:
+            warnings.warn(f"KPI update error: {exc}")
         try:
             active_digits = self.query_one("#kpi-active", Digits)
             active_digits.update(str(active))
@@ -76,17 +81,17 @@ class KpiPanel(Widget):
             else:
                 active_digits.styles.color = None
                 active_digits.styles.text_style = ""
-        except Exception:
-            pass
+        except Exception as exc:
+            warnings.warn(f"KPI update error: {exc}")
         try:
             self.query_one("#kpi-reports", Digits).update(
                 str(snap.report_count)
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            warnings.warn(f"KPI update error: {exc}")
 
         # Build the completion gauge bar.
-        bar_width = 40
+        bar_width = max(20, self.size.width - 20) if self.size.width > 0 else 40
         filled = int((pct / 100) * bar_width)
         empty = bar_width - filled
         text = (
@@ -96,5 +101,10 @@ class KpiPanel(Widget):
         )
         try:
             self.query_one("#kpi-completion-bar", Static).update(text)
-        except Exception:
-            pass
+        except Exception as exc:
+            warnings.warn(f"KPI update error: {exc}")
+
+    def on_resize(self, event) -> None:
+        """Re-render on resize to adjust gauge width."""
+        if self._last_snapshot is not None:
+            self.update_from_snapshot(self._last_snapshot)

@@ -70,11 +70,10 @@ class ActivityFeedWidget(Static):
     colored type icons, and truncated summaries.
     """
 
-    _last_snapshot: StatusSnapshot | None = None
-
     def __init__(self, **kwargs) -> None:
         super().__init__("[dim]Loading…[/dim]", **kwargs)
         self.border_title = "Recent Activity"
+        self._last_snapshot: StatusSnapshot | None = None
 
     def update_from_snapshot(self, snap: StatusSnapshot) -> None:
         """Rebuilds the feed from the current snapshot."""

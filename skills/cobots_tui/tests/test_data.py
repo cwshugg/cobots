@@ -246,7 +246,7 @@ class TestReadBodySafeOversized(unittest.TestCase):
             with open(path, "a") as f:
                 f.write("x" * (MAX_FILE_SIZE + 1))
 
-            result = _read_body_safe(path)
+            result = _read_body_safe(path, ws)
             self.assertEqual(result, "")
 
     def test_normal_file_returns_body(self) -> None:
@@ -259,12 +259,14 @@ class TestReadBodySafeOversized(unittest.TestCase):
                 body="Hello world.",
             )
 
-            result = _read_body_safe(path)
+            result = _read_body_safe(path, ws)
             self.assertIn("Hello world.", result)
 
     def test_nonexistent_file_returns_empty(self) -> None:
-        result = _read_body_safe("/nonexistent/path/to/file.md")
-        self.assertEqual(result, "")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = create_mock_workspace(tmp)
+            result = _read_body_safe("/nonexistent/path/to/file.md", ws)
+            self.assertEqual(result, "")
 
     def test_oversized_file_excluded_from_timeline(self) -> None:
         """An oversized task file should produce no discussion events."""
@@ -384,55 +386,6 @@ class TestSnapshotSortDescending(unittest.TestCase):
             snap = load_snapshot(workspace_path=ws)
             self.assertEqual(len(snap.tasks), 0)
             self.assertEqual(len(snap.reports), 0)
-
-
-class TestSparklineEventsField(unittest.TestCase):
-    """sparkline_events contains all events uncapped for sparkline display."""
-
-    def test_sparkline_events_default_empty(self) -> None:
-        """StatusSnapshot constructed without sparkline_events defaults to ()."""
-        snap = StatusSnapshot(
-            workspace_name="w", workspace_root="/w",
-            tasks=(), reports=(),
-            task_counts_by_status=types.MappingProxyType({}),
-            task_counts_by_owner=types.MappingProxyType({}),
-            report_count=0, activity_timeline=(),
-            snapshot_timestamp="now",
-        )
-        self.assertEqual(snap.sparkline_events, ())
-
-    def test_sparkline_events_uncapped_vs_activity_timeline_capped(self) -> None:
-        """sparkline_events has all events while activity_timeline is capped."""
-        with tempfile.TemporaryDirectory() as tmp:
-            ws = create_mock_workspace(tmp)
-            tasks_dir = os.path.join(ws, "tasks")
-
-            for i in range(10):
-                write_task_file(
-                    tasks_dir,
-                    task_id=f"sparkle{i:010d}",
-                    created_timestamp=f"2026-01-{i+1:02d} 00:00:00",
-                )
-
-            snap = load_snapshot(workspace_path=ws, activity_count=3)
-            # activity_timeline is capped at 3
-            self.assertLessEqual(len(snap.activity_timeline), 3)
-            # sparkline_events should contain ALL events (at least 10)
-            self.assertGreaterEqual(len(snap.sparkline_events), 10)
-
-    def test_sparkline_events_populated_on_load(self) -> None:
-        """load_snapshot populates sparkline_events for a workspace with data."""
-        with tempfile.TemporaryDirectory() as tmp:
-            ws = create_mock_workspace(tmp)
-            tasks_dir = os.path.join(ws, "tasks")
-            reports_dir = os.path.join(ws, "reports")
-
-            write_task_file(tasks_dir, task_id="sparktask00000001")
-            write_report_file(reports_dir, report_id="sparkrpt000000001")
-
-            snap = load_snapshot(workspace_path=ws)
-            # Should have at least 2 events (1 task created + 1 report created)
-            self.assertGreaterEqual(len(snap.sparkline_events), 2)
 
 
 class TestOwnerNormalization(unittest.TestCase):

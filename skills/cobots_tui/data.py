@@ -94,7 +94,6 @@ class StatusSnapshot:
     report_count: int
     activity_timeline: tuple[ActivityEvent, ...]
     snapshot_timestamp: str
-    sparkline_events: tuple[ActivityEvent, ...] = ()
 
     def status_counts_dict(self) -> dict[str, int]:
         """Returns ``task_counts_by_status`` as a plain ``dict``.
@@ -141,26 +140,26 @@ def load_task(path: str, workspace_root: str) -> TaskData | None:
     try:
         validated = validate_path_within_workspace(path, workspace_root)
     except ValueError:
-        warnings.warn(f"Skipping file outside workspace: {path}")
+        warnings.warn(f"Skipping file outside workspace: {os.path.basename(path)}")
         return None
 
     try:
         size = os.path.getsize(validated)
     except OSError:
-        warnings.warn(f"Cannot stat file: {path}")
+        warnings.warn(f"Cannot stat file: {os.path.basename(path)}")
         return None
     if size > MAX_FILE_SIZE:
-        warnings.warn(f"Skipping oversized file ({size} bytes): {path}")
+        warnings.warn(f"Skipping oversized file ({size} bytes): {os.path.basename(path)}")
         return None
 
     try:
         frontmatter, _body = parse_frontmatter(validated)
     except OSError as exc:
-        warnings.warn(f"Cannot read file {path}: {exc}")
+        warnings.warn(f"Cannot read file {os.path.basename(path)}: {exc}")
         return None
 
     if not frontmatter:
-        warnings.warn(f"No frontmatter in file: {path}")
+        warnings.warn(f"No frontmatter in file: {os.path.basename(path)}")
         return None
 
     rel = _relative_path(validated, workspace_root)
@@ -187,26 +186,26 @@ def load_report(path: str, workspace_root: str) -> ReportData | None:
     try:
         validated = validate_path_within_workspace(path, workspace_root)
     except ValueError:
-        warnings.warn(f"Skipping file outside workspace: {path}")
+        warnings.warn(f"Skipping file outside workspace: {os.path.basename(path)}")
         return None
 
     try:
         size = os.path.getsize(validated)
     except OSError:
-        warnings.warn(f"Cannot stat file: {path}")
+        warnings.warn(f"Cannot stat file: {os.path.basename(path)}")
         return None
     if size > MAX_FILE_SIZE:
-        warnings.warn(f"Skipping oversized file ({size} bytes): {path}")
+        warnings.warn(f"Skipping oversized file ({size} bytes): {os.path.basename(path)}")
         return None
 
     try:
         frontmatter, _body = parse_frontmatter(validated)
     except OSError as exc:
-        warnings.warn(f"Cannot read file {path}: {exc}")
+        warnings.warn(f"Cannot read file {os.path.basename(path)}: {exc}")
         return None
 
     if not frontmatter:
-        warnings.warn(f"No frontmatter in file: {path}")
+        warnings.warn(f"No frontmatter in file: {os.path.basename(path)}")
         return None
 
     rel = _relative_path(validated, workspace_root)
@@ -234,17 +233,24 @@ def list_report_files(workspace_root: str) -> list[str]:
     return sorted(glob.glob(pattern))
 
 
-def _read_body_safe(path: str) -> str:
+def _read_body_safe(path: str, workspace_root: str) -> str:
     """Reads the body of a markdown file, returning empty string on error.
 
     Enforces ``MAX_FILE_SIZE`` before reading to guard against files that
     grew between the initial ``load_task()`` size check and this call
     (defense-in-depth against TOCTOU window).
+
+    Also validates that *path* resolves within *workspace_root*
+    (defense-in-depth against path traversal).
     """
     try:
-        if os.path.getsize(path) > MAX_FILE_SIZE:
+        validated = validate_path_within_workspace(path, workspace_root)
+    except ValueError:
+        return ""
+    try:
+        if os.path.getsize(validated) > MAX_FILE_SIZE:
             return ""
-        _, body = parse_frontmatter(path)
+        _, body = parse_frontmatter(validated)
         return body
     except OSError:
         return ""
@@ -274,7 +280,7 @@ def build_activity_timeline(
                 entity_id=task.id,
             ))
         # Parse discussion headers from the task body for update events.
-        body = _read_body_safe(task.path)
+        body = _read_body_safe(task.path, workspace_root)
         if body:
             for ts, author in parse_discussion_headers(body):
                 events.append(ActivityEvent(
@@ -356,11 +362,6 @@ def load_snapshot(
     timeline = build_activity_timeline(
         tasks, reports, workspace_root, count=activity_count
     )
-    # Sparkline (uncapped — all events for 30-day bucketing)
-    sparkline_timeline = build_activity_timeline(
-        tasks, reports, workspace_root, count=10000
-    )
-
     # --- Timestamp ---
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -373,6 +374,5 @@ def load_snapshot(
         task_counts_by_owner=types.MappingProxyType(dict(owner_counter)),
         report_count=len(reports),
         activity_timeline=timeline,
-        sparkline_events=sparkline_timeline,
         snapshot_timestamp=now,
     )

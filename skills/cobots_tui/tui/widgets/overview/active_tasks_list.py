@@ -26,11 +26,10 @@ class ActiveTasksList(Static):
     ``get_status_color()`` — no hardcoded status assumptions.
     """
 
-    _last_snapshot: StatusSnapshot | None = None
-
     def __init__(self, **kwargs) -> None:
         super().__init__("[dim]Loading…[/dim]", **kwargs)
         self.border_title = "Active Tasks"
+        self._last_snapshot: StatusSnapshot | None = None
 
     def update_from_snapshot(self, snap: StatusSnapshot) -> None:
         """Rebuilds the list from the current snapshot."""

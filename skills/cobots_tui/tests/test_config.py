@@ -31,6 +31,11 @@ from cobots_lib.workspace.config import CobotsConfig, StatusConfig
 from config import load_status_config
 from tests.helpers import create_mock_workspace
 
+# Import clamp_cli_args from the hyphen-named CLI module.
+import importlib
+_cobots_tui_cli = importlib.import_module("cobots-tui")
+clamp_cli_args = _cobots_tui_cli.clamp_cli_args
+
 
 class TestLoadStatusConfigDefaults(unittest.TestCase):
     """load_status_config returns defaults when no config file exists."""
@@ -150,128 +155,61 @@ class TestCliArgsClamping(unittest.TestCase):
 
     Addresses security finding F3: --refresh-rate and --activity-count
     bypass StatusConfig bounds clamping when explicitly provided.
+
+    Calls the real ``clamp_cli_args()`` from ``cobots-tui.py`` instead
+    of reimplementing the clamping logic inline.
     """
 
-    def test_refresh_rate_clamped_low_via_main(self) -> None:
-        """--refresh-rate 1 should be clamped to MIN_REFRESH_RATE."""
+    def _make_args(self, **overrides) -> "argparse.Namespace":
         import argparse
-        args = argparse.Namespace(
-            refresh_rate=1,
+        defaults = dict(
+            refresh_rate=None,
             activity_count=None,
             show_overview=False,
             no_refresh=False,
             workspace_path=None,
         )
-        # Simulate the clamping logic from cobots-tui.py main().
-        status_config = StatusConfig()
-        if args.activity_count is None:
-            args.activity_count = status_config.activity_count
-        else:
-            args.activity_count = max(
-                StatusConfig.MIN_ACTIVITY_COUNT,
-                min(args.activity_count, StatusConfig.MAX_ACTIVITY_COUNT),
-            )
-        if args.refresh_rate is None:
-            args.refresh_rate = status_config.refresh_rate
-        else:
-            args.refresh_rate = max(
-                StatusConfig.MIN_REFRESH_RATE,
-                min(args.refresh_rate, StatusConfig.MAX_REFRESH_RATE),
-            )
+        defaults.update(overrides)
+        return argparse.Namespace(**defaults)
 
+    def test_refresh_rate_clamped_low_via_main(self) -> None:
+        """--refresh-rate 1 should be clamped to MIN_REFRESH_RATE."""
+        args = self._make_args(refresh_rate=1)
+        clamp_cli_args(args, StatusConfig())
         self.assertEqual(args.refresh_rate, StatusConfig.MIN_REFRESH_RATE)
 
     def test_refresh_rate_clamped_high_via_main(self) -> None:
         """--refresh-rate 99999 should be clamped to MAX_REFRESH_RATE."""
-        import argparse
-        args = argparse.Namespace(
-            refresh_rate=99999,
-            activity_count=None,
-            show_overview=False,
-            no_refresh=False,
-            workspace_path=None,
-        )
-        status_config = StatusConfig()
-        if args.refresh_rate is None:
-            args.refresh_rate = status_config.refresh_rate
-        else:
-            args.refresh_rate = max(
-                StatusConfig.MIN_REFRESH_RATE,
-                min(args.refresh_rate, StatusConfig.MAX_REFRESH_RATE),
-            )
-
+        args = self._make_args(refresh_rate=99999)
+        clamp_cli_args(args, StatusConfig())
         self.assertEqual(args.refresh_rate, StatusConfig.MAX_REFRESH_RATE)
 
     def test_activity_count_clamped_low_via_main(self) -> None:
         """--activity-count 0 should be clamped to MIN_ACTIVITY_COUNT."""
-        import argparse
-        args = argparse.Namespace(
-            refresh_rate=None,
-            activity_count=0,
-            show_overview=False,
-            no_refresh=False,
-            workspace_path=None,
-        )
-        status_config = StatusConfig()
-        if args.activity_count is None:
-            args.activity_count = status_config.activity_count
-        else:
-            args.activity_count = max(
-                StatusConfig.MIN_ACTIVITY_COUNT,
-                min(args.activity_count, StatusConfig.MAX_ACTIVITY_COUNT),
-            )
-
+        args = self._make_args(activity_count=0)
+        clamp_cli_args(args, StatusConfig())
         self.assertEqual(args.activity_count, StatusConfig.MIN_ACTIVITY_COUNT)
 
     def test_activity_count_clamped_high_via_main(self) -> None:
         """--activity-count 999999 should be clamped to MAX_ACTIVITY_COUNT."""
-        import argparse
-        args = argparse.Namespace(
-            refresh_rate=None,
-            activity_count=999999,
-            show_overview=False,
-            no_refresh=False,
-            workspace_path=None,
-        )
-        status_config = StatusConfig()
-        if args.activity_count is None:
-            args.activity_count = status_config.activity_count
-        else:
-            args.activity_count = max(
-                StatusConfig.MIN_ACTIVITY_COUNT,
-                min(args.activity_count, StatusConfig.MAX_ACTIVITY_COUNT),
-            )
-
+        args = self._make_args(activity_count=999999)
+        clamp_cli_args(args, StatusConfig())
         self.assertEqual(args.activity_count, StatusConfig.MAX_ACTIVITY_COUNT)
 
     def test_in_range_values_unchanged(self) -> None:
         """Values within bounds should pass through unchanged."""
-        import argparse
-        args = argparse.Namespace(
-            refresh_rate=30,
-            activity_count=50,
-            show_overview=False,
-            no_refresh=False,
-            workspace_path=None,
-        )
-        status_config = StatusConfig()
-        if args.refresh_rate is None:
-            args.refresh_rate = status_config.refresh_rate
-        else:
-            args.refresh_rate = max(
-                StatusConfig.MIN_REFRESH_RATE,
-                min(args.refresh_rate, StatusConfig.MAX_REFRESH_RATE),
-            )
-        if args.activity_count is None:
-            args.activity_count = status_config.activity_count
-        else:
-            args.activity_count = max(
-                StatusConfig.MIN_ACTIVITY_COUNT,
-                min(args.activity_count, StatusConfig.MAX_ACTIVITY_COUNT),
-            )
-
+        args = self._make_args(refresh_rate=30, activity_count=50)
+        clamp_cli_args(args, StatusConfig())
         self.assertEqual(args.refresh_rate, 30)
         self.assertEqual(args.activity_count, 50)
+
+    def test_none_values_use_config_defaults(self) -> None:
+        """None values should be filled from the StatusConfig defaults."""
+        args = self._make_args()
+        cfg = StatusConfig(refresh_rate=10, activity_count=25)
+        clamp_cli_args(args, cfg)
+        self.assertEqual(args.refresh_rate, 10)
+        self.assertEqual(args.activity_count, 25)
 
 
 if __name__ == "__main__":
