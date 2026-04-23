@@ -21,16 +21,11 @@ Header {
     color: #F5ECD7;
 }
 
-Footer {
-    background: #2D2B28;
-    color: #F5ECD7;
-}
-
 SummaryBar {
     height: 3;
     dock: top;
-    background: #2D2B28;
-    color: #F5ECD7;
+    padding: 0 1;
+    content-align: left middle;
 }
 
 TabbedContent {
@@ -38,7 +33,6 @@ TabbedContent {
 }
 
 TabPane {
-    background: #2D2B28;
     height: 1fr;
 }
 
@@ -46,13 +40,8 @@ ActivityLog {
     height: auto;
     max-height: 15;
     dock: bottom;
-    background: #2D2B28;
-    color: #F5ECD7;
-}
-
-DataTable {
-    background: #2D2B28;
-    color: #F5ECD7;
+    padding: 0 1;
+    overflow-y: auto;
 }
 
 DataTable > .datatable--cursor {
@@ -63,6 +52,15 @@ DataTable > .datatable--cursor {
 /* ================================================================ */
 /* Overview tab                                                      */
 /* ================================================================ */
+
+.overview-card {
+    border: round #8A8478;
+    border-title-color: #F5ECD7;
+    margin: 0;
+    height: auto;
+    min-height: 4;
+    padding: 0 1;
+}
 
 OverviewPane {
     layout: grid;
@@ -78,12 +76,7 @@ OverviewPane {
 
 KpiPanel {
     column-span: 2;
-    height: auto;
     max-height: 10;
-    padding: 0 1;
-    margin: 0;
-    border: round #8A8478;
-    border-title-color: #F5ECD7;
 }
 
 #kpi-row {
@@ -118,53 +111,9 @@ Digits {
     content-align: center middle;
 }
 
-/* --- Charts (left column) --- */
-
-StatusChart {
-    height: auto;
-    min-height: 4;
-    padding: 0 1;
-    margin: 0;
-    border: round #8A8478;
-    border-title-color: #F5ECD7;
-}
-
-OwnerChart {
-    height: auto;
-    min-height: 4;
-    padding: 0 1;
-    margin: 0;
-    border: round #8A8478;
-    border-title-color: #F5ECD7;
-}
-
-/* --- Lists (right column) --- */
-
-ActiveTasksList {
-    height: auto;
-    min-height: 4;
-    padding: 0 1;
-    margin: 0;
-    border: round #8A8478;
-    border-title-color: #F5ECD7;
-}
-
-RecentReportsList {
-    height: auto;
-    min-height: 4;
-    padding: 0 1;
-    margin: 0;
-    border: round #8A8478;
-    border-title-color: #F5ECD7;
-}
-
 /* --- Activity Feed (full-width bottom) --- */
 
 ActivityFeedWidget {
     column-span: 2;
-    height: auto;
     max-height: 8;
-    padding: 0 1;
-    border: round #8A8478;
-    border-title-color: #F5ECD7;
 }

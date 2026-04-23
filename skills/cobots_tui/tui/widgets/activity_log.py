@@ -5,7 +5,7 @@ Displays the most recent workspace activity events (newest first) in a
 scrollable Static widget.
 """
 
-from textual.widgets import Static
+from tui.widgets.snapshot_widget import SnapshotWidget
 
 from constants import CERULEAN, APRICOT_CREAM, GRAPEFRUIT, DIM_PARCHMENT
 from data import StatusSnapshot
@@ -19,21 +19,8 @@ EVENT_STYLES: dict[str, tuple[str, str]] = {
 }
 
 
-class ActivityLog(Static):
+class ActivityLog(SnapshotWidget):
     """Scrollable log of recent workspace activity events."""
-
-    DEFAULT_CSS = """
-    ActivityLog {
-        height: auto;
-        max-height: 15;
-        padding: 0 1;
-        overflow-y: auto;
-    }
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._last_snapshot: StatusSnapshot | None = None
 
     def update_from_snapshot(self, snapshot: StatusSnapshot) -> None:
         """Refreshes the activity log from a new snapshot."""
@@ -61,8 +48,3 @@ class ActivityLog(Static):
                 f"{sanitize_display_text(event.summary)}"
             )
         self.update("\n".join(lines))
-
-    def on_resize(self, event) -> None:
-        """Re-render the header at the new width when the terminal is resized."""
-        if self._last_snapshot is not None:
-            self.update_from_snapshot(self._last_snapshot)

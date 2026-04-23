@@ -6,32 +6,12 @@ file data is properly escaped.
 """
 
 import io
-import os
-import sys
-import tempfile
 import types
 import unittest
-from unittest.mock import MagicMock
-
-# ---------------------------------------------------------------------------
-# Bootstrap
-# ---------------------------------------------------------------------------
-_SKILLS_DIR = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..")
-)
-if _SKILLS_DIR not in sys.path:
-    sys.path.insert(0, _SKILLS_DIR)
-
-_SKILL_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-if _SKILL_DIR not in sys.path:
-    sys.path.insert(0, _SKILL_DIR)
-
-sys.modules.setdefault("venv", MagicMock())
-sys.modules.setdefault("venv.venv", MagicMock())
 
 from rich.console import Console
 
-from data import TaskData, ReportData, ActivityEvent, StatusSnapshot
+from data import TaskData, ReportData, ActivityEvent
 from modes.rich_mode import (
     _build_task_table,
     _build_report_table,

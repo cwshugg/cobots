@@ -5,27 +5,8 @@ Tests the thin wrapper that loads StatusConfig from CobotsConfig.
 """
 
 import os
-import sys
 import tempfile
 import unittest
-
-# ---------------------------------------------------------------------------
-# Bootstrap
-# ---------------------------------------------------------------------------
-_SKILLS_DIR = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..")
-)
-if _SKILLS_DIR not in sys.path:
-    sys.path.insert(0, _SKILLS_DIR)
-
-_SKILL_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-if _SKILL_DIR not in sys.path:
-    sys.path.insert(0, _SKILL_DIR)
-
-# Mock venv activation.
-from unittest.mock import MagicMock
-sys.modules.setdefault("venv", MagicMock())
-sys.modules.setdefault("venv.venv", MagicMock())
 
 from cobots_lib.workspace.config import CobotsConfig, StatusConfig
 from config import load_status_config

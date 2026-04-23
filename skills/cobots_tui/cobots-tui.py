@@ -126,7 +126,6 @@ def main() -> None:
         from modes.rich_mode import run_rich
         return run_rich(
             args,
-            status_config=status_config,
             cobots_config=cobots_config,
         )
 

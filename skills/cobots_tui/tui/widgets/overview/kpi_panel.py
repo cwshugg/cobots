@@ -19,9 +19,10 @@ from constants import (
     COMPLETED_STATUSES,
 )
 from data import StatusSnapshot
+from tui.widgets.snapshot_widget import SnapshotMixin
 
 
-class KpiPanel(Widget):
+class KpiPanel(SnapshotMixin, Widget):
     """Three key-performance-indicator Digits plus a completion gauge bar.
 
     Spans both grid columns (``column-span: 2``) via TCSS.
@@ -29,8 +30,9 @@ class KpiPanel(Widget):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
+        self._init_snapshot_mixin()
         self.border_title = "Dashboard"
-        self._last_snapshot: StatusSnapshot | None = None
+        self.add_class("overview-card")
 
     def compose(self) -> ComposeResult:
         """Yields the KPI row and completion bar."""
@@ -80,7 +82,7 @@ class KpiPanel(Widget):
                 active_digits.styles.text_style = "bold"
             else:
                 active_digits.styles.color = None
-                active_digits.styles.text_style = ""
+                active_digits.styles.text_style = "none"
         except Exception as exc:
             warnings.warn(f"KPI update error: {exc}")
         try:
@@ -103,8 +105,3 @@ class KpiPanel(Widget):
             self.query_one("#kpi-completion-bar", Static).update(text)
         except Exception as exc:
             warnings.warn(f"KPI update error: {exc}")
-
-    def on_resize(self, event) -> None:
-        """Re-render on resize to adjust gauge width."""
-        if self._last_snapshot is not None:
-            self.update_from_snapshot(self._last_snapshot)

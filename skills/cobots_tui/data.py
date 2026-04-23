@@ -132,17 +132,18 @@ def _relative_path(abs_path: str, workspace_root: str) -> str:
         return abs_path
 
 
-def load_task(path: str, workspace_root: str) -> TaskData | None:
-    """Parses a single ``.task.md`` file into a :class:`TaskData`.
+def _validate_and_parse(
+    path: str, workspace_root: str
+) -> tuple[dict, str, str] | None:
+    """Validates path, checks size, parses frontmatter.
 
-    Returns ``None`` on any error (never crashes).
+    Returns (frontmatter_dict, validated_path, relative_path) or None.
     """
     try:
         validated = validate_path_within_workspace(path, workspace_root)
     except ValueError:
         warnings.warn(f"Skipping file outside workspace: {os.path.basename(path)}")
         return None
-
     try:
         size = os.path.getsize(validated)
     except OSError:
@@ -151,18 +152,27 @@ def load_task(path: str, workspace_root: str) -> TaskData | None:
     if size > MAX_FILE_SIZE:
         warnings.warn(f"Skipping oversized file ({size} bytes): {os.path.basename(path)}")
         return None
-
     try:
-        frontmatter, _body = parse_frontmatter(validated)
+        fm, _ = parse_frontmatter(validated)
     except OSError as exc:
         warnings.warn(f"Cannot read file {os.path.basename(path)}: {exc}")
         return None
-
-    if not frontmatter:
+    if not fm:
         warnings.warn(f"No frontmatter in file: {os.path.basename(path)}")
         return None
-
     rel = _relative_path(validated, workspace_root)
+    return (fm, validated, rel)
+
+
+def load_task(path: str, workspace_root: str) -> TaskData | None:
+    """Parses a single ``.task.md`` file into a :class:`TaskData`.
+
+    Returns ``None`` on any error (never crashes).
+    """
+    result = _validate_and_parse(path, workspace_root)
+    if result is None:
+        return None
+    frontmatter, validated, rel = result
     return TaskData(
         id=str(frontmatter.get("id", "")),
         title=str(frontmatter.get("title", "")),
@@ -183,32 +193,10 @@ def load_report(path: str, workspace_root: str) -> ReportData | None:
 
     Returns ``None`` on any error (never crashes).
     """
-    try:
-        validated = validate_path_within_workspace(path, workspace_root)
-    except ValueError:
-        warnings.warn(f"Skipping file outside workspace: {os.path.basename(path)}")
+    result = _validate_and_parse(path, workspace_root)
+    if result is None:
         return None
-
-    try:
-        size = os.path.getsize(validated)
-    except OSError:
-        warnings.warn(f"Cannot stat file: {os.path.basename(path)}")
-        return None
-    if size > MAX_FILE_SIZE:
-        warnings.warn(f"Skipping oversized file ({size} bytes): {os.path.basename(path)}")
-        return None
-
-    try:
-        frontmatter, _body = parse_frontmatter(validated)
-    except OSError as exc:
-        warnings.warn(f"Cannot read file {os.path.basename(path)}: {exc}")
-        return None
-
-    if not frontmatter:
-        warnings.warn(f"No frontmatter in file: {os.path.basename(path)}")
-        return None
-
-    rel = _relative_path(validated, workspace_root)
+    frontmatter, validated, rel = result
     return ReportData(
         id=str(frontmatter.get("id", "")),
         title=str(frontmatter.get("title", "")),

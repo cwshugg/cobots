@@ -6,7 +6,6 @@ The main Textual App class for the interactive cobots TUI.
 
 import os
 import subprocess
-import sys
 import warnings
 
 from textual.app import App, ComposeResult
@@ -133,36 +132,13 @@ class CobotsStatusApp(App):
         from tui.widgets.report_table import ReportTable
         from tui.widgets.activity_log import ActivityLog
 
-        try:
-            self.query_one(OverviewPane).update_from_snapshot(snap)
-        except NoMatches:
-            pass
-        except Exception as exc:
-            warnings.warn(f"Failed to update OverviewPane: {exc}")
-        try:
-            self.query_one(SummaryBar).update_from_snapshot(snap)
-        except NoMatches:
-            pass
-        except Exception as exc:
-            warnings.warn(f"Failed to update SummaryBar: {exc}")
-        try:
-            self.query_one(TaskTable).update_from_snapshot(snap)
-        except NoMatches:
-            pass
-        except Exception as exc:
-            warnings.warn(f"Failed to update TaskTable: {exc}")
-        try:
-            self.query_one(ReportTable).update_from_snapshot(snap)
-        except NoMatches:
-            pass
-        except Exception as exc:
-            warnings.warn(f"Failed to update ReportTable: {exc}")
-        try:
-            self.query_one(ActivityLog).update_from_snapshot(snap)
-        except NoMatches:
-            pass
-        except Exception as exc:
-            warnings.warn(f"Failed to update ActivityLog: {exc}")
+        for wtype in (OverviewPane, SummaryBar, TaskTable, ReportTable, ActivityLog):
+            try:
+                self.query_one(wtype).update_from_snapshot(snap)
+            except NoMatches:
+                pass
+            except Exception as exc:
+                warnings.warn(f"Failed to update {wtype.__name__}: {exc}")
 
     def action_refresh(self) -> None:
         """Manually trigger a data refresh (bound to 'r' key)."""
@@ -216,8 +192,8 @@ class CobotsStatusApp(App):
     # Tab switching (vim h / l)
     # ------------------------------------------------------------------
 
-    def action_previous_tab(self) -> None:
-        """Switch to the previous tab (bound to 'h' key)."""
+    def _switch_tab(self, direction: int) -> None:
+        """Switch tab by direction (-1 for previous, +1 for next)."""
         try:
             tc = self.query_one(TabbedContent)
             pane_ids = [pane.id for pane in tc.query(TabPane) if pane.id]
@@ -225,22 +201,17 @@ class CobotsStatusApp(App):
                 return
             current = tc.active
             idx = pane_ids.index(current) if current in pane_ids else 0
-            tc.active = pane_ids[(idx - 1) % len(pane_ids)]
+            tc.active = pane_ids[(idx + direction) % len(pane_ids)]
         except Exception as exc:
-            warnings.warn(f"Focus/nav error: {exc}")
+            warnings.warn(f"Tab switch error: {exc}")
+
+    def action_previous_tab(self) -> None:
+        """Switch to the previous tab (bound to 'h' key)."""
+        self._switch_tab(-1)
 
     def action_next_tab(self) -> None:
         """Switch to the next tab (bound to 'l' key)."""
-        try:
-            tc = self.query_one(TabbedContent)
-            pane_ids = [pane.id for pane in tc.query(TabPane) if pane.id]
-            if not pane_ids:
-                return
-            current = tc.active
-            idx = pane_ids.index(current) if current in pane_ids else 0
-            tc.active = pane_ids[(idx + 1) % len(pane_ids)]
-        except Exception as exc:
-            warnings.warn(f"Focus/nav error: {exc}")
+        self._switch_tab(+1)
 
     def _get_selected_item(self) -> TaskData | ReportData | None:
         """Returns the currently selected task or report based on active tab."""
@@ -269,23 +240,20 @@ class CobotsStatusApp(App):
                 return None
         return None
 
-    def action_edit(self) -> None:
-        """Edit the selected item in $EDITOR (bound to 'e' key)."""
+    def _launch_external(self, env_var: str, default: str, label: str) -> None:
+        """Launch an external program (editor/pager) on the selected item."""
         item = self._get_selected_item()
         if item is None:
             self.notify("No item selected", severity="warning")
             return
-
-        editor = os.environ.get("EDITOR", "").strip()
-        if not editor:
-            self.notify("EDITOR environment variable not set", severity="error")
+        program = os.environ.get(env_var, default).strip()
+        if not program:
+            self.notify(f"{env_var} environment variable not set", severity="error")
             return
-
-        editor_parts = validate_editor(editor)
-        if editor_parts is None:
-            self.notify(f"Editor not found: {editor}", severity="error")
+        program_parts = validate_editor(program)
+        if program_parts is None:
+            self.notify(f"{label} not found: {program}", severity="error")
             return
-
         try:
             validated_path = validate_path_within_workspace(
                 item.path, self.workspace_root
@@ -293,58 +261,27 @@ class CobotsStatusApp(App):
         except ValueError as exc:
             self.notify(str(exc), severity="error")
             return
-
         if self._refresh_timer:
             self._refresh_timer.pause()
         try:
             with self.suspend():
-                result = subprocess.run(editor_parts + [validated_path], timeout=28800)
+                result = subprocess.run(program_parts + [validated_path], timeout=28800)
             if result.returncode != 0:
                 self.notify(
-                    f"{editor_parts[0]} exited with code {result.returncode}",
+                    f"{program_parts[0]} exited with code {result.returncode}",
                     severity="warning",
                 )
         except (FileNotFoundError, OSError, subprocess.TimeoutExpired) as exc:
-            self.notify(f"Failed to launch editor: {exc}", severity="error")
+            self.notify(f"Failed to launch {label}: {exc}", severity="error")
         finally:
             if self._refresh_timer:
                 self._refresh_timer.resume()
             self.action_refresh()
+
+    def action_edit(self) -> None:
+        """Edit the selected item in $EDITOR (bound to 'e' key)."""
+        self._launch_external("EDITOR", "", "editor")
 
     def action_view_item(self) -> None:
         """View the selected item in $PAGER (bound to 'v' key)."""
-        item = self._get_selected_item()
-        if item is None:
-            self.notify("No item selected", severity="warning")
-            return
-
-        pager = os.environ.get("PAGER", "less").strip()
-        pager_parts = validate_editor(pager)
-        if pager_parts is None:
-            self.notify(f"Pager not found: {pager}", severity="error")
-            return
-
-        try:
-            validated_path = validate_path_within_workspace(
-                item.path, self.workspace_root
-            )
-        except ValueError as exc:
-            self.notify(str(exc), severity="error")
-            return
-
-        if self._refresh_timer:
-            self._refresh_timer.pause()
-        try:
-            with self.suspend():
-                result = subprocess.run(pager_parts + [validated_path], timeout=28800)
-            if result.returncode != 0:
-                self.notify(
-                    f"{pager_parts[0]} exited with code {result.returncode}",
-                    severity="warning",
-                )
-        except (FileNotFoundError, OSError, subprocess.TimeoutExpired) as exc:
-            self.notify(f"Failed to launch pager: {exc}", severity="error")
-        finally:
-            if self._refresh_timer:
-                self._refresh_timer.resume()
-            self.action_refresh()
+        self._launch_external("PAGER", "less", "pager")

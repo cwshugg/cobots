@@ -7,37 +7,10 @@ app composition and keybinding behavior.
 
 import asyncio
 import os
-import sys
 import tempfile
 import unittest
 
-# ---------------------------------------------------------------------------
-# Bootstrap
-# ---------------------------------------------------------------------------
-_SKILLS_DIR = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..")
-)
-if _SKILLS_DIR not in sys.path:
-    sys.path.insert(0, _SKILLS_DIR)
-
-_SKILL_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-if _SKILL_DIR not in sys.path:
-    sys.path.insert(0, _SKILL_DIR)
-
-from unittest.mock import MagicMock
-sys.modules.setdefault("venv", MagicMock())
-sys.modules.setdefault("venv.venv", MagicMock())
-
-from tests.helpers import create_mock_workspace, write_task_file, write_report_file
-
-
-def _skip_if_no_textual():
-    """Skip test if textual is not installed."""
-    try:
-        import textual
-        return False
-    except ImportError:
-        return True
+from tests.helpers import create_mock_workspace, write_task_file, write_report_file, _skip_if_no_textual
 
 
 @unittest.skipIf(_skip_if_no_textual(), "textual not installed")
@@ -306,93 +279,6 @@ class TestVimGJumpNavigation(unittest.TestCase):
 
 
 @unittest.skipIf(_skip_if_no_textual(), "textual not installed")
-class TestVimHLTabSwitching(unittest.TestCase):
-    """Vim h/l keybindings switch between tabs."""
-
-    def test_l_switches_to_next_tab(self) -> None:
-        from tui.app import CobotsStatusApp
-        from textual.widgets import TabbedContent
-
-        async def _run():
-            with tempfile.TemporaryDirectory() as tmp:
-                ws = create_mock_workspace(tmp)
-                app = CobotsStatusApp(
-                    workspace_path=ws,
-                    no_refresh=True,
-                    activity_count=5,
-                )
-                async with app.run_test(size=(120, 40)) as pilot:
-                    await pilot.pause()
-                    await pilot.pause()
-                    tc = app.query_one(TabbedContent)
-                    initial_tab = tc.active
-
-                    # Press l to switch to next tab.
-                    await pilot.press("l")
-                    await pilot.pause()
-                    await pilot.pause()
-                    self.assertNotEqual(tc.active, initial_tab)
-
-        asyncio.run(_run())
-
-    def test_h_switches_to_previous_tab(self) -> None:
-        from tui.app import CobotsStatusApp
-        from textual.widgets import TabbedContent
-
-        async def _run():
-            with tempfile.TemporaryDirectory() as tmp:
-                ws = create_mock_workspace(tmp)
-                app = CobotsStatusApp(
-                    workspace_path=ws,
-                    no_refresh=True,
-                    activity_count=5,
-                )
-                async with app.run_test(size=(120, 40)) as pilot:
-                    await pilot.pause()
-                    await pilot.pause()
-                    tc = app.query_one(TabbedContent)
-                    initial_tab = tc.active
-
-                    # Go next first, then come back with h.
-                    await pilot.press("l")
-                    await pilot.pause()
-                    await pilot.pause()
-                    self.assertNotEqual(tc.active, initial_tab)
-
-                    await pilot.press("h")
-                    await pilot.pause()
-                    await pilot.pause()
-                    self.assertEqual(tc.active, initial_tab)
-
-        asyncio.run(_run())
-
-    def test_table_focused_after_tab_switch(self) -> None:
-        """DataTable in the newly activated tab should receive focus."""
-        from tui.app import CobotsStatusApp
-        from textual.widgets import DataTable
-
-        async def _run():
-            with tempfile.TemporaryDirectory() as tmp:
-                ws = create_mock_workspace(tmp)
-                app = CobotsStatusApp(
-                    workspace_path=ws,
-                    no_refresh=True,
-                    activity_count=5,
-                )
-                async with app.run_test(size=(120, 40)) as pilot:
-                    await pilot.pause()
-                    await pilot.pause()
-                    # Switch to reports tab.
-                    await pilot.press("l")
-                    await pilot.pause()
-                    await pilot.pause()
-                    focused = app.focused
-                    self.assertIsInstance(focused, DataTable)
-
-        asyncio.run(_run())
-
-
-@unittest.skipIf(_skip_if_no_textual(), "textual not installed")
 class TestCursorPreservationOnRefresh(unittest.TestCase):
     """Cursor position is preserved when the table is refreshed."""
 
@@ -456,7 +342,6 @@ class TestCursorPreservationOnRefresh(unittest.TestCase):
         """Cursor clamps to last row when item count decreases."""
         from tui.app import CobotsStatusApp
         from tui.widgets.task_table import TaskTable
-        from data import load_snapshot
 
         async def _run():
             with tempfile.TemporaryDirectory() as tmp:

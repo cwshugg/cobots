@@ -6,33 +6,12 @@ timeline logic.
 """
 
 import os
-import sys
 import tempfile
 import types
 import unittest
 
-# ---------------------------------------------------------------------------
-# Bootstrap
-# ---------------------------------------------------------------------------
-_SKILLS_DIR = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..")
-)
-if _SKILLS_DIR not in sys.path:
-    sys.path.insert(0, _SKILLS_DIR)
-
-_SKILL_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-if _SKILL_DIR not in sys.path:
-    sys.path.insert(0, _SKILL_DIR)
-
-# Mock venv activation.
-from unittest.mock import MagicMock
-sys.modules.setdefault("venv", MagicMock())
-sys.modules.setdefault("venv.venv", MagicMock())
-
 from data import (
     TaskData,
-    ReportData,
-    ActivityEvent,
     StatusSnapshot,
     load_task,
     load_report,
@@ -368,24 +347,6 @@ class TestSnapshotSortDescending(unittest.TestCase):
             )
             self.assertEqual(snap.reports[0].id, "new_rpt0000000002")
             self.assertEqual(snap.reports[-1].id, "old_rpt0000000001")
-
-    def test_single_task_is_sorted(self) -> None:
-        """A single-element list is trivially sorted."""
-        with tempfile.TemporaryDirectory() as tmp:
-            ws = create_mock_workspace(tmp)
-            tasks_dir = os.path.join(ws, "tasks")
-            write_task_file(tasks_dir, task_id="solo_task00000001")
-
-            snap = load_snapshot(workspace_path=ws)
-            self.assertEqual(len(snap.tasks), 1)
-
-    def test_empty_workspace_is_sorted(self) -> None:
-        """An empty workspace has no tasks or reports to sort."""
-        with tempfile.TemporaryDirectory() as tmp:
-            ws = create_mock_workspace(tmp)
-            snap = load_snapshot(workspace_path=ws)
-            self.assertEqual(len(snap.tasks), 0)
-            self.assertEqual(len(snap.reports), 0)
 
 
 class TestOwnerNormalization(unittest.TestCase):

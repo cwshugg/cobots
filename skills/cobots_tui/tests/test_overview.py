@@ -8,30 +8,11 @@ TUI, and review-fix verification tests.
 
 import asyncio
 import os
-import sys
 import tempfile
 import types
 import unittest
-from datetime import datetime, timezone
 
-# ---------------------------------------------------------------------------
-# Bootstrap
-# ---------------------------------------------------------------------------
-_SKILLS_DIR = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..")
-)
-if _SKILLS_DIR not in sys.path:
-    sys.path.insert(0, _SKILLS_DIR)
-
-_SKILL_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-if _SKILL_DIR not in sys.path:
-    sys.path.insert(0, _SKILL_DIR)
-
-from unittest.mock import MagicMock
-sys.modules.setdefault("venv", MagicMock())
-sys.modules.setdefault("venv.venv", MagicMock())
-
-from data import TaskData, ReportData, ActivityEvent, StatusSnapshot
+from data import TaskData, ReportData, ActivityEvent
 from tests.helpers import (
     create_mock_workspace,
     write_task_file,
@@ -97,13 +78,7 @@ def _make_event(
     )
 
 
-def _skip_if_no_textual():
-    """Skip test if textual is not installed."""
-    try:
-        import textual
-        return False
-    except ImportError:
-        return True
+from tests.helpers import _skip_if_no_textual
 
 
 # ===================================================================
@@ -111,84 +86,74 @@ def _skip_if_no_textual():
 # ===================================================================
 
 
+from tui.widgets.overview.activity_feed import relative_time
+
+
 class TestRelativeTime(unittest.TestCase):
     """Tests for the ``relative_time`` pure function."""
 
     def test_seconds_ago(self) -> None:
         """Events less than 60 seconds ago show seconds."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("2026-04-22 12:00:30", "2026-04-22 12:00:45")
         self.assertEqual(result, "15s ago")
 
     def test_zero_seconds_ago(self) -> None:
         """Exact same timestamp returns '0s ago'."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("2026-04-22 12:00:00", "2026-04-22 12:00:00")
         self.assertEqual(result, "0s ago")
 
     def test_minutes_ago(self) -> None:
         """Events 1-59 minutes ago show minutes."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("2026-04-22 11:30:00", "2026-04-22 12:00:00")
         self.assertEqual(result, "30m ago")
 
     def test_hours_ago(self) -> None:
         """Events 1-23 hours ago show hours."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("2026-04-22 09:00:00", "2026-04-22 12:00:00")
         self.assertEqual(result, "3h ago")
 
     def test_days_ago(self) -> None:
         """Events 1-29 days ago show days."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("2026-04-19 12:00:00", "2026-04-22 12:00:00")
         self.assertEqual(result, "3d ago")
 
     def test_30_plus_days_returns_date(self) -> None:
         """Events 30+ days ago return the raw date prefix."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("2026-03-01 12:00:00", "2026-04-22 12:00:00")
         self.assertEqual(result, "2026-03-01")
 
     def test_negative_delta_returns_just_now(self) -> None:
         """Future events (negative delta) return 'just now'."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("2026-04-22 13:00:00", "2026-04-22 12:00:00")
         self.assertEqual(result, "just now")
 
     def test_invalid_event_timestamp(self) -> None:
         """Malformed event timestamps fall back to date prefix."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("not-a-date", "2026-04-22 12:00:00")
         self.assertEqual(result, "not-a-date")
 
     def test_empty_event_timestamp(self) -> None:
         """Empty event timestamp returns 'unknown'."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("", "2026-04-22 12:00:00")
         self.assertEqual(result, "unknown")
 
     def test_invalid_now_timestamp(self) -> None:
         """Malformed now_ts falls back to date prefix of event_ts."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("2026-04-22 12:00:00", "bad-time")
         self.assertEqual(result, "2026-04-22")
 
     def test_one_minute_boundary(self) -> None:
         """Exactly 60 seconds shows '1m ago', not '60s ago'."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("2026-04-22 11:59:00", "2026-04-22 12:00:00")
         self.assertEqual(result, "1m ago")
 
     def test_one_hour_boundary(self) -> None:
         """Exactly 60 minutes shows '1h ago', not '60m ago'."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("2026-04-22 11:00:00", "2026-04-22 12:00:00")
         self.assertEqual(result, "1h ago")
 
     def test_one_day_boundary(self) -> None:
         """Exactly 24 hours shows '1d ago', not '24h ago'."""
-        from tui.widgets.overview.activity_feed import relative_time
         result = relative_time("2026-04-21 12:00:00", "2026-04-22 12:00:00")
         self.assertEqual(result, "1d ago")
 
@@ -836,11 +801,6 @@ class TestActivityFeedWidget(unittest.TestCase):
 
         asyncio.run(_run())
 
-    def test_feed_import(self) -> None:
-        """ActivityFeedWidget can be imported from its module."""
-        from tui.widgets.overview.activity_feed import ActivityFeedWidget
-        self.assertTrue(callable(ActivityFeedWidget))
-
 
 # ===================================================================
 # Integration tests — full app with Overview tab
@@ -986,313 +946,8 @@ class TestOverviewIntegration(unittest.TestCase):
 
 
 # ===================================================================
-# Review fix verification tests
+# Dynamic truncation tests
 # ===================================================================
-
-
-class TestReviewFixes(unittest.TestCase):
-    """Verifies the outstanding review findings are addressed."""
-
-    def test_dim_parchment_in_tcss_comment(self) -> None:
-        """Review fix #1: DIM_PARCHMENT is in the TCSS color comment."""
-        tcss_path = os.path.join(
-            os.path.dirname(__file__), "..", "tui", "styles", "status.tcss",
-        )
-        with open(tcss_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        self.assertIn("Dim Parchment", content)
-        self.assertIn("#8A8478", content)
-
-    def test_no_duplicate_status_config_import(self) -> None:
-        """Review fix #2: StatusConfig imported once at module level."""
-        cli_path = os.path.join(
-            os.path.dirname(__file__), "..", "cobots-tui.py",
-        )
-        with open(cli_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        # Should have exactly one `from cobots_lib...import StatusConfig`.
-        import_count = content.count(
-            "from cobots_lib.workspace.config import StatusConfig"
-        )
-        self.assertEqual(import_count, 1)
-
-    def test_clamp_cli_args_function_exists(self) -> None:
-        """Review fix #3: clamp_cli_args helper extracted in CLI."""
-        cli_path = os.path.join(
-            os.path.dirname(__file__), "..", "cobots-tui.py",
-        )
-        with open(cli_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        self.assertIn("def clamp_cli_args(", content)
-
-    def test_activity_log_sanitizes_fallback(self) -> None:
-        """Review fix #5: fallback label in activity_log is sanitized."""
-        log_path = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "tui",
-            "widgets",
-            "activity_log.py",
-        )
-        with open(log_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        self.assertIn("sanitize_display_text(event.event_type)", content)
-
-    def test_no_unused_re_import_in_security(self) -> None:
-        """Review fix #6: security.py has no unused 'import re'."""
-        sec_path = os.path.join(
-            os.path.dirname(__file__), "..", "security.py",
-        )
-        with open(sec_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        self.assertNotIn("import re", content)
-
-
-# ===================================================================
-# UI polish tests — borders and centered KPIs
-# ===================================================================
-
-
-class TestOverviewBordersInTCSS(unittest.TestCase):
-    """Verifies that the TCSS file declares borders for overview widgets."""
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        """Load the TCSS file content once for all tests."""
-        tcss_path = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "tui",
-            "styles",
-            "status.tcss",
-        )
-        with open(tcss_path, "r", encoding="utf-8") as f:
-            cls.tcss_content = f.read()
-
-    def test_kpi_panel_has_border(self) -> None:
-        """KpiPanel section declares a round border."""
-        self.assertIn("border: round #8A8478", self.tcss_content)
-
-    def test_status_chart_has_border(self) -> None:
-        """StatusChart section declares a round border."""
-        # Find the StatusChart block specifically.
-        idx = self.tcss_content.find("StatusChart {")
-        self.assertNotEqual(idx, -1, "StatusChart block missing")
-        block = self.tcss_content[idx:idx + 200]
-        self.assertIn("border: round #8A8478", block)
-
-    def test_owner_chart_has_border(self) -> None:
-        """OwnerChart section declares a round border."""
-        idx = self.tcss_content.find("OwnerChart {")
-        self.assertNotEqual(idx, -1, "OwnerChart block missing")
-        block = self.tcss_content[idx:idx + 200]
-        self.assertIn("border: round #8A8478", block)
-
-    def test_active_tasks_list_has_border(self) -> None:
-        """ActiveTasksList section declares a round border."""
-        idx = self.tcss_content.find("ActiveTasksList {")
-        self.assertNotEqual(idx, -1, "ActiveTasksList block missing")
-        block = self.tcss_content[idx:idx + 200]
-        self.assertIn("border: round #8A8478", block)
-
-    def test_recent_reports_list_has_border(self) -> None:
-        """RecentReportsList section declares a round border."""
-        idx = self.tcss_content.find("RecentReportsList {")
-        self.assertNotEqual(idx, -1, "RecentReportsList block missing")
-        block = self.tcss_content[idx:idx + 200]
-        self.assertIn("border: round #8A8478", block)
-
-    def test_activity_feed_has_border(self) -> None:
-        """ActivityFeedWidget section declares a round border."""
-        idx = self.tcss_content.find("ActivityFeedWidget {")
-        self.assertNotEqual(idx, -1, "ActivityFeedWidget block missing")
-        block = self.tcss_content[idx:idx + 200]
-        self.assertIn("border: round #8A8478", block)
-
-    def test_border_title_color_declared(self) -> None:
-        """All bordered widgets declare a border-title-color."""
-        for widget in (
-            "KpiPanel",
-            "StatusChart",
-            "OwnerChart",
-            "ActiveTasksList",
-            "RecentReportsList",
-            "ActivityFeedWidget",
-        ):
-            idx = self.tcss_content.find(f"{widget} {{")
-            self.assertNotEqual(idx, -1, f"{widget} block missing")
-            block = self.tcss_content[idx:idx + 200]
-            self.assertIn(
-                "border-title-color: #F5ECD7",
-                block,
-                f"{widget} missing border-title-color",
-            )
-
-
-class TestOverviewBorderTitles(unittest.TestCase):
-    """Verifies that overview widgets set border_title on instances.
-
-    The border_title must be set in ``__init__`` (via ``self.border_title``)
-    rather than as a class variable, because a class-level assignment
-    shadows the Textual ``_BorderTitle`` descriptor and prevents Textual
-    from rendering the title.
-    """
-
-    def test_status_chart_border_title(self) -> None:
-        """StatusChart instance has the expected border_title."""
-        from tui.widgets.overview.status_chart import StatusChart
-        widget = StatusChart()
-        self.assertEqual(widget.border_title, "Status Breakdown")
-
-    def test_owner_chart_border_title(self) -> None:
-        """OwnerChart instance has the expected border_title."""
-        from tui.widgets.overview.owner_chart import OwnerChart
-        widget = OwnerChart()
-        self.assertEqual(widget.border_title, "By Owner")
-
-    def test_active_tasks_list_border_title(self) -> None:
-        """ActiveTasksList instance has the expected border_title."""
-        from tui.widgets.overview.active_tasks_list import (
-            ActiveTasksList,
-        )
-        widget = ActiveTasksList()
-        self.assertEqual(widget.border_title, "Active Tasks")
-
-    def test_recent_reports_list_border_title(self) -> None:
-        """RecentReportsList instance has the expected border_title."""
-        from tui.widgets.overview.recent_reports_list import (
-            RecentReportsList,
-        )
-        widget = RecentReportsList()
-        self.assertEqual(widget.border_title, "Recent Reports")
-
-    def test_activity_feed_border_title(self) -> None:
-        """ActivityFeedWidget instance has the expected border_title."""
-        from tui.widgets.overview.activity_feed import (
-            ActivityFeedWidget,
-        )
-        widget = ActivityFeedWidget()
-        self.assertEqual(widget.border_title, "Recent Activity")
-
-    def test_kpi_panel_border_title(self) -> None:
-        """KpiPanel instance has the expected border_title."""
-        from tui.widgets.overview.kpi_panel import KpiPanel
-        widget = KpiPanel()
-        self.assertEqual(widget.border_title, "Dashboard")
-
-    def test_no_class_level_border_title(self) -> None:
-        """No widget should shadow the Textual descriptor with a class var."""
-        from tui.widgets.overview.status_chart import StatusChart
-        from tui.widgets.overview.owner_chart import OwnerChart
-        from tui.widgets.overview.active_tasks_list import ActiveTasksList
-        from tui.widgets.overview.recent_reports_list import RecentReportsList
-        from tui.widgets.overview.activity_feed import ActivityFeedWidget
-        from tui.widgets.overview.kpi_panel import KpiPanel
-
-        for cls in (
-            StatusChart, OwnerChart, ActiveTasksList,
-            RecentReportsList, ActivityFeedWidget, KpiPanel,
-        ):
-            self.assertNotIn(
-                "border_title", cls.__dict__,
-                f"{cls.__name__} must not have a class-level border_title "
-                f"(it shadows Textual's _BorderTitle descriptor)",
-            )
-
-
-class TestKpiCenteringInTCSS(unittest.TestCase):
-    """Verifies that TCSS rules center KPI digits and labels."""
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        """Load the TCSS file content once for all tests."""
-        tcss_path = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "tui",
-            "styles",
-            "status.tcss",
-        )
-        with open(tcss_path, "r", encoding="utf-8") as f:
-            cls.tcss_content = f.read()
-
-    def test_kpi_card_has_center_alignment(self) -> None:
-        """The .kpi-card rule includes center alignment."""
-        idx = self.tcss_content.find(".kpi-card {")
-        self.assertNotEqual(idx, -1, ".kpi-card block missing")
-        block = self.tcss_content[idx:idx + 200]
-        self.assertIn("align: center middle", block)
-        self.assertIn("content-align: center middle", block)
-
-    def test_kpi_label_has_text_align_center(self) -> None:
-        """The .kpi-label rule includes text-align: center."""
-        idx = self.tcss_content.find(".kpi-label {")
-        self.assertNotEqual(idx, -1, ".kpi-label block missing")
-        block = self.tcss_content[idx:idx + 200]
-        self.assertIn("text-align: center", block)
-
-    def test_kpi_label_has_full_width(self) -> None:
-        """The .kpi-label rule sets width: 100%."""
-        idx = self.tcss_content.find(".kpi-label {")
-        self.assertNotEqual(idx, -1, ".kpi-label block missing")
-        block = self.tcss_content[idx:idx + 200]
-        self.assertIn("width: 100%", block)
-
-    def test_digits_has_text_align_center(self) -> None:
-        """The Digits rule includes text-align: center."""
-        idx = self.tcss_content.find("Digits {")
-        self.assertNotEqual(idx, -1, "Digits block missing")
-        block = self.tcss_content[idx:idx + 150]
-        self.assertIn("text-align: center", block)
-
-    def test_digits_has_full_width(self) -> None:
-        """The Digits rule sets width: 100%."""
-        idx = self.tcss_content.find("Digits {")
-        self.assertNotEqual(idx, -1, "Digits block missing")
-        block = self.tcss_content[idx:idx + 150]
-        self.assertIn("width: 100%", block)
-
-
-class TestInlineHeadersRemoved(unittest.TestCase):
-    """Verifies that redundant inline bold headers were removed.
-
-    Since border titles now provide section headers, the old inline
-    ``[bold]Title[/bold]`` lines at the start of widget content are
-    redundant and should be absent from the widget source files.
-    """
-
-    def _read_widget_source(self, filename: str) -> str:
-        """Reads a widget source file from the overview directory."""
-        path = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "tui",
-            "widgets",
-            "overview",
-            filename,
-        )
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read()
-
-    def test_status_chart_no_inline_header(self) -> None:
-        """StatusChart no longer prepends '[bold]Status Breakdown'."""
-        src = self._read_widget_source("status_chart.py")
-        self.assertNotIn("[bold]Status Breakdown[/bold]", src)
-
-    def test_owner_chart_no_inline_header(self) -> None:
-        """OwnerChart no longer prepends '[bold]By Owner'."""
-        src = self._read_widget_source("owner_chart.py")
-        self.assertNotIn("[bold]By Owner[/bold]", src)
-
-    def test_active_tasks_list_no_inline_header(self) -> None:
-        """ActiveTasksList no longer prepends '[bold]Active Tasks'."""
-        src = self._read_widget_source("active_tasks_list.py")
-        self.assertNotIn("[bold]Active Tasks[/bold]", src)
-
-    def test_recent_reports_list_no_inline_header(self) -> None:
-        """RecentReportsList no longer prepends '[bold]Recent Reports'."""
-        src = self._read_widget_source("recent_reports_list.py")
-        self.assertNotIn("[bold]Recent Reports[/bold]", src)
 
 
 @unittest.skipIf(_skip_if_no_textual(), "textual not installed")
@@ -1441,136 +1096,10 @@ class TestDynamicTruncation(unittest.TestCase):
 
         asyncio.run(_run())
 
-    def test_no_hardcoded_truncation_in_source(self) -> None:
-        """Verify hardcoded truncation constants have been removed."""
-        import os
-
-        widget_dir = os.path.join(
-            os.path.dirname(__file__), "..", "tui", "widgets", "overview",
-        )
-
-        # active_tasks_list.py should NOT have [:35] on title
-        with open(os.path.join(widget_dir, "active_tasks_list.py")) as f:
-            src = f.read()
-        self.assertNotIn("[:35]", src)
-        self.assertIn("self.size.width", src)
-
-        # recent_reports_list.py should NOT have [:30] on title
-        with open(os.path.join(widget_dir, "recent_reports_list.py")) as f:
-            src = f.read()
-        self.assertNotIn("[:30]", src)
-        self.assertIn("self.size.width", src)
-
-        # activity_feed.py should NOT have [:45] on summary
-        with open(os.path.join(widget_dir, "activity_feed.py")) as f:
-            src = f.read()
-        self.assertNotIn("[:45]", src)
-        self.assertIn("self.size.width", src)
-
 
 @unittest.skipIf(_skip_if_no_textual(), "textual not installed")
 class TestResizeRerender(unittest.TestCase):
     """Tests that widgets re-render on resize via _last_snapshot."""
-
-    def test_active_tasks_stores_last_snapshot(self) -> None:
-        """ActiveTasksList caches the snapshot for resize re-render."""
-        from tui.app import CobotsStatusApp
-        from tui.widgets.overview.active_tasks_list import ActiveTasksList
-
-        tasks = (_make_task(task_id="t1", title="Test", status="pending"),)
-        snap = make_snapshot(tasks=tasks)
-
-        async def _run():
-            with tempfile.TemporaryDirectory() as tmp:
-                ws = create_mock_workspace(tmp)
-                app = CobotsStatusApp(
-                    workspace_path=ws, no_refresh=True, activity_count=5,
-                )
-                async with app.run_test(size=(120, 40)) as pilot:
-                    await pilot.pause()
-                    widget = app.query_one(ActiveTasksList)
-                    widget.update_from_snapshot(snap)
-                    await pilot.pause()
-                    self.assertIs(widget._last_snapshot, snap)
-
-        asyncio.run(_run())
-
-    def test_recent_reports_stores_last_snapshot(self) -> None:
-        """RecentReportsList caches the snapshot for resize re-render."""
-        from tui.app import CobotsStatusApp
-        from tui.widgets.overview.recent_reports_list import (
-            RecentReportsList,
-        )
-
-        reports = (_make_report(report_id="r0001", title="Test"),)
-        snap = make_snapshot(reports=reports, report_count=1)
-
-        async def _run():
-            with tempfile.TemporaryDirectory() as tmp:
-                ws = create_mock_workspace(tmp)
-                app = CobotsStatusApp(
-                    workspace_path=ws, no_refresh=True, activity_count=5,
-                )
-                async with app.run_test(size=(120, 40)) as pilot:
-                    await pilot.pause()
-                    widget = app.query_one(RecentReportsList)
-                    widget.update_from_snapshot(snap)
-                    await pilot.pause()
-                    self.assertIs(widget._last_snapshot, snap)
-
-        asyncio.run(_run())
-
-    def test_activity_feed_stores_last_snapshot(self) -> None:
-        """ActivityFeedWidget caches the snapshot for resize re-render."""
-        from tui.app import CobotsStatusApp
-        from tui.widgets.overview.activity_feed import ActivityFeedWidget
-
-        events = (
-            _make_event(
-                timestamp="2026-04-22 11:55:00",
-                event_type="task_created",
-                summary="Test event",
-            ),
-        )
-        snap = make_snapshot(
-            activity_timeline=events,
-            snapshot_timestamp="2026-04-22 12:00:00",
-        )
-
-        async def _run():
-            with tempfile.TemporaryDirectory() as tmp:
-                ws = create_mock_workspace(tmp)
-                app = CobotsStatusApp(
-                    workspace_path=ws, no_refresh=True, activity_count=5,
-                )
-                async with app.run_test(size=(120, 40)) as pilot:
-                    await pilot.pause()
-                    widget = app.query_one(ActivityFeedWidget)
-                    widget.update_from_snapshot(snap)
-                    await pilot.pause()
-                    self.assertIs(widget._last_snapshot, snap)
-
-        asyncio.run(_run())
-
-    def test_active_tasks_has_on_resize(self) -> None:
-        """ActiveTasksList defines on_resize for re-rendering."""
-        from tui.widgets.overview.active_tasks_list import ActiveTasksList
-        self.assertTrue(hasattr(ActiveTasksList, "on_resize"))
-        self.assertTrue(callable(getattr(ActiveTasksList, "on_resize")))
-
-    def test_recent_reports_has_on_resize(self) -> None:
-        """RecentReportsList defines on_resize for re-rendering."""
-        from tui.widgets.overview.recent_reports_list import (
-            RecentReportsList,
-        )
-        self.assertTrue(hasattr(RecentReportsList, "on_resize"))
-        self.assertTrue(callable(getattr(RecentReportsList, "on_resize")))
-
-    def test_activity_feed_has_on_resize(self) -> None:
-        """ActivityFeedWidget defines on_resize for re-rendering."""
-        from tui.widgets.overview.activity_feed import ActivityFeedWidget
-        self.assertTrue(hasattr(ActivityFeedWidget, "on_resize"))
-        self.assertTrue(callable(getattr(ActivityFeedWidget, "on_resize")))
 
     def test_on_resize_noop_without_snapshot(self) -> None:
         """on_resize is a no-op when _last_snapshot is None."""

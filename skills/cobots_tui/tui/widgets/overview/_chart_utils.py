@@ -15,6 +15,13 @@ BAR_WIDTH: int = 25
 LABEL_WIDTH: int = 12
 
 
+def compute_bar_width(widget_width: int) -> int:
+    """Computes dynamic bar width based on widget width."""
+    if widget_width > 0:
+        return max(10, widget_width - LABEL_WIDTH - 8)
+    return BAR_WIDTH
+
+
 def render_bar(
     label: str, value: int, max_val: int, color: str,
     bar_width: int = BAR_WIDTH,

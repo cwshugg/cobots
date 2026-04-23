@@ -7,7 +7,7 @@ All cell values are sanitized via :func:`sanitize_display_text`.
 
 from rich.text import Text
 
-from constants import STATUS_COLORS, PARCHMENT
+from constants import get_status_color
 from tui.widgets.vim_nav_table import VimNavigableTable
 from data import StatusSnapshot, TaskData
 from security import sanitize_display_text
@@ -34,10 +34,10 @@ class TaskTable(VimNavigableTable):
         previously selected row index exceeds the new row count, the
         cursor is clamped to the last row.
         """
-        saved_row = self.cursor_coordinate.row if self.row_count > 0 else 0
+        saved_row = self._save_cursor()
         self.clear()
         for task in snapshot.tasks:
-            color = STATUS_COLORS.get(task.status, PARCHMENT)
+            color = get_status_color(task.status)
             status_text = Text(sanitize_display_text(task.status))
             status_text.stylize(color)
             self.add_row(
@@ -48,20 +48,11 @@ class TaskTable(VimNavigableTable):
                 sanitize_display_text(task.created_timestamp),
                 key=task.id,
             )
-        if self.row_count > 0:
-            restored = min(saved_row, self.row_count - 1)
-            self.move_cursor(row=restored)
+        self._restore_cursor(saved_row)
 
     def get_selected_item(self, snapshot: StatusSnapshot) -> TaskData | None:
         """Returns the :class:`TaskData` for the currently highlighted row."""
-        if self.row_count == 0:
+        item_id = self._get_selected_id()
+        if item_id is None:
             return None
-        try:
-            row_key, _ = self.coordinate_to_cell_key(self.cursor_coordinate)
-        except Exception:
-            return None
-        task_id = str(row_key.value)
-        for task in snapshot.tasks:
-            if task.id == task_id:
-                return task
-        return None
+        return next((t for t in snapshot.tasks if t.id == item_id), None)

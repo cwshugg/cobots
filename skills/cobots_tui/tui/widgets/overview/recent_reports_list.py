@@ -5,7 +5,7 @@ Displays the last ``MAX_DISPLAY`` reports with date, author, and a
 truncated title.  All text is sanitized before rendering.
 """
 
-from textual.widgets import Static
+from tui.widgets.snapshot_widget import SnapshotWidget
 
 from constants import CERULEAN, DIM_PARCHMENT
 from data import StatusSnapshot
@@ -15,13 +15,13 @@ from security import sanitize_display_text
 MAX_DISPLAY: int = 5
 
 
-class RecentReportsList(Static):
+class RecentReportsList(SnapshotWidget):
     """Compact Rich-text list of the most recent workspace reports."""
 
     def __init__(self, **kwargs) -> None:
         super().__init__("[dim]Loading…[/dim]", **kwargs)
         self.border_title = "Recent Reports"
-        self._last_snapshot: StatusSnapshot | None = None
+        self.add_class("overview-card")
 
     def update_from_snapshot(self, snap: StatusSnapshot) -> None:
         """Rebuilds the list from the current snapshot."""
@@ -51,8 +51,3 @@ class RecentReportsList(Static):
             )
 
         self.update("\n".join(lines))
-
-    def on_resize(self, event) -> None:
-        """Re-render on resize to adjust text truncation."""
-        if self._last_snapshot is not None:
-            self.update_from_snapshot(self._last_snapshot)

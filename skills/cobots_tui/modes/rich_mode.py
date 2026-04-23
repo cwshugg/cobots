@@ -13,9 +13,8 @@ from rich.text import Text
 from rich import box
 
 from constants import (
-    STATUS_COLORS,
     CERULEAN,
-    PARCHMENT,
+    get_status_color,
 )
 from data import load_snapshot, StatusSnapshot
 from security import sanitize_display_text
@@ -26,7 +25,7 @@ def _build_summary_text(snapshot: StatusSnapshot) -> str:
     counts_status = snapshot.status_counts_dict()
     parts: list[str] = []
     for status, count in sorted(counts_status.items()):
-        color = STATUS_COLORS.get(status, PARCHMENT)
+        color = get_status_color(status)
         parts.append(
             f"[{color}]{sanitize_display_text(status)}: "
             f"{count}[/{color}]"
@@ -49,7 +48,7 @@ def _build_task_table(snapshot: StatusSnapshot) -> Table:
     table.add_column("Created", width=20)
 
     for task in snapshot.tasks:
-        color = STATUS_COLORS.get(task.status, PARCHMENT)
+        color = get_status_color(task.status)
         status_text = Text(sanitize_display_text(task.status))
         status_text.stylize(color)
         table.add_row(
@@ -97,7 +96,7 @@ def _build_activity_section(snapshot: StatusSnapshot) -> Panel:
     return Panel(body, title="Recent Activity", border_style="dim")
 
 
-def run_rich(args, status_config=None, cobots_config=None) -> None:
+def run_rich(args, cobots_config=None) -> None:
     """Renders a Rich-formatted static snapshot to the console."""
     snapshot = load_snapshot(
         workspace_path=getattr(args, "workspace_path", None),

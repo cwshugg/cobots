@@ -34,7 +34,7 @@ class ReportTable(VimNavigableTable):
         previously selected row index exceeds the new row count, the
         cursor is clamped to the last row.
         """
-        saved_row = self.cursor_coordinate.row if self.row_count > 0 else 0
+        saved_row = self._save_cursor()
         self.clear()
         for report in snapshot.reports:
             self.add_row(
@@ -44,23 +44,14 @@ class ReportTable(VimNavigableTable):
                 sanitize_display_text(report.created_timestamp),
                 key=report.id,
             )
-        if self.row_count > 0:
-            restored = min(saved_row, self.row_count - 1)
-            self.move_cursor(row=restored)
+        self._restore_cursor(saved_row)
 
     def get_selected_item(self, snapshot: StatusSnapshot) -> ReportData | None:
         """Returns the :class:`ReportData` for the currently highlighted row."""
-        if self.row_count == 0:
+        item_id = self._get_selected_id()
+        if item_id is None:
             return None
-        try:
-            row_key, _ = self.coordinate_to_cell_key(self.cursor_coordinate)
-        except Exception:
-            return None
-        report_id = str(row_key.value)
-        for report in snapshot.reports:
-            if report.id == report_id:
-                return report
-        return None
+        return next((r for r in snapshot.reports if r.id == item_id), None)
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         """Pushes a detail screen when a report row is selected (Enter)."""

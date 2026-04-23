@@ -20,7 +20,7 @@ def run_tui(args, status_config=None, cobots_config=None) -> None:
             file=sys.stderr,
         )
         from modes.rich_mode import run_rich
-        return run_rich(args, status_config=status_config, cobots_config=cobots_config)
+        return run_rich(args, cobots_config=cobots_config)
 
     try:
         from tui.app import CobotsStatusApp

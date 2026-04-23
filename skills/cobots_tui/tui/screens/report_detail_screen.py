@@ -44,6 +44,7 @@ class ReportDetailScreen(Screen):
 
     def on_mount(self) -> None:
         """Load and display the report content."""
+        self.title = f"Report: {sanitize_display_text(self.report_title)}"
         # Re-validate the path at read time (defense-in-depth).
         # The path was validated when the snapshot was built, but time may
         # have passed between snapshot creation and the user opening this
@@ -59,7 +60,6 @@ class ReportDetailScreen(Screen):
                     "(Report path is outside workspace boundary)"
                 )
             )
-            self.title = f"Report: {sanitize_display_text(self.report_title)}"
             return
 
         # Enforce the same file-size guard used by data.py when scanning
@@ -72,7 +72,6 @@ class ReportDetailScreen(Screen):
             self.query_one("#report-body", Static).update(
                 sanitize_display_text(body)
             )
-            self.title = f"Report: {sanitize_display_text(self.report_title)}"
             return
 
         if size > MAX_FILE_SIZE:
@@ -83,7 +82,6 @@ class ReportDetailScreen(Screen):
             self.query_one("#report-body", Static).update(
                 sanitize_display_text(body)
             )
-            self.title = f"Report: {sanitize_display_text(self.report_title)}"
             return
 
         try:
@@ -92,4 +90,3 @@ class ReportDetailScreen(Screen):
             body = "(Could not read report file)"
         safe_body = sanitize_display_text(body)
         self.query_one("#report-body", Static).update(safe_body)
-        self.title = f"Report: {sanitize_display_text(self.report_title)}"

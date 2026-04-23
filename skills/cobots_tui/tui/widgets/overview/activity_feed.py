@@ -7,10 +7,10 @@ colored event-type icons, and truncated summaries.
 
 from datetime import datetime, timezone
 
-from textual.widgets import Static
+from tui.widgets.snapshot_widget import SnapshotWidget
 
 from constants import CERULEAN, APRICOT_CREAM, GRAPEFRUIT, DIM_PARCHMENT
-from data import ActivityEvent, StatusSnapshot
+from data import StatusSnapshot
 from security import sanitize_display_text
 
 # Maximum number of events to display.
@@ -62,7 +62,7 @@ def relative_time(event_ts: str, now_ts: str) -> str:
         return event_ts[:10] if event_ts else "unknown"
 
 
-class ActivityFeedWidget(Static):
+class ActivityFeedWidget(SnapshotWidget):
     """Compact feed of the most recent workspace activity events.
 
     Spans both grid columns (``column-span: 2``) via TCSS.
@@ -73,7 +73,7 @@ class ActivityFeedWidget(Static):
     def __init__(self, **kwargs) -> None:
         super().__init__("[dim]Loading…[/dim]", **kwargs)
         self.border_title = "Recent Activity"
-        self._last_snapshot: StatusSnapshot | None = None
+        self.add_class("overview-card")
 
     def update_from_snapshot(self, snap: StatusSnapshot) -> None:
         """Rebuilds the feed from the current snapshot."""
@@ -108,8 +108,3 @@ class ActivityFeedWidget(Static):
             )
 
         self.update("\n".join(lines))
-
-    def on_resize(self, event) -> None:
-        """Re-render on resize to adjust text truncation."""
-        if self._last_snapshot is not None:
-            self.update_from_snapshot(self._last_snapshot)

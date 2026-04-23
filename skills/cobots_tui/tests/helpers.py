@@ -127,3 +127,12 @@ def make_snapshot(**kwargs) -> StatusSnapshot:
     }
     defaults.update(kwargs)
     return StatusSnapshot(**defaults)
+
+
+def _skip_if_no_textual():
+    """Skip test if textual is not installed."""
+    try:
+        import textual
+        return False
+    except ImportError:
+        return True

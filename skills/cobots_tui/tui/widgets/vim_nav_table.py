@@ -34,3 +34,26 @@ class VimNavigableTable(DataTable):
         Binding("g", "scroll_top", "First Row", show=False),
         Binding("G", "scroll_bottom", "Last Row", show=False),
     ]
+
+    # ------------------------------------------------------------------
+    # Shared helpers for subclasses (TaskTable / ReportTable)
+    # ------------------------------------------------------------------
+
+    def _get_selected_id(self) -> str | None:
+        """Returns the row key value of the currently selected row, or None."""
+        if self.row_count == 0:
+            return None
+        try:
+            row_key, _ = self.coordinate_to_cell_key(self.cursor_coordinate)
+        except Exception:
+            return None
+        return str(row_key.value)
+
+    def _save_cursor(self) -> int:
+        """Returns the current cursor row index."""
+        return self.cursor_coordinate.row if self.row_count > 0 else 0
+
+    def _restore_cursor(self, saved_row: int) -> None:
+        """Restores cursor to saved position, clamped to current row count."""
+        if self.row_count > 0:
+            self.move_cursor(row=min(saved_row, self.row_count - 1))

@@ -189,17 +189,30 @@ skills/cobots_tui/
 │   │   ├── task_table.py           # Task DataTable widget
 │   │   ├── report_table.py         # Report DataTable widget
 │   │   ├── summary_bar.py          # Aggregate statistics bar
-│   │   └── activity_log.py         # Recent activity timeline
+│   │   ├── activity_log.py         # Recent activity timeline
+│   │   ├── snapshot_widget.py      # Base widget with snapshot caching
+│   │   └── overview/
+│   │       ├── __init__.py         # Package init
+│   │       ├── _chart_utils.py     # Shared chart rendering helpers
+│   │       ├── overview_pane.py    # Overview tab grid container
+│   │       ├── kpi_panel.py        # KPI digits and completion bar
+│   │       ├── status_chart.py     # Horizontal bar chart by status
+│   │       ├── owner_chart.py      # Horizontal bar chart by owner
+│   │       ├── active_tasks_list.py  # Active tasks summary list
+│   │       ├── recent_reports_list.py # Recent reports summary list
+│   │       └── activity_feed.py    # Activity feed widget
 │   └── styles/
 │       └── status.tcss             # Textual CSS stylesheet
 └── tests/
     ├── __init__.py                 # Package init
+    ├── conftest.py                 # Pytest configuration and fixtures
     ├── helpers.py                  # Shared test fixtures and factory functions
     ├── test_data.py
     ├── test_config.py
     ├── test_security.py
     ├── test_rich_mode.py
     ├── test_tui.py
+    ├── test_overview.py
     └── test_mode_e2e.py
 ```
 

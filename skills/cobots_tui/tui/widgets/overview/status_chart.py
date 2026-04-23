@@ -6,14 +6,14 @@ the snapshot.  Colors come from ``get_status_color()`` which falls back
 to PARCHMENT for unknown/custom statuses.
 """
 
-from textual.widgets import Static
+from tui.widgets.snapshot_widget import SnapshotWidget
 
 from constants import get_status_color
 from data import StatusSnapshot
-from tui.widgets.overview._chart_utils import render_bar, BAR_WIDTH, LABEL_WIDTH
+from tui.widgets.overview._chart_utils import render_bar, compute_bar_width
 
 
-class StatusChart(Static):
+class StatusChart(SnapshotWidget):
     """Horizontal bar chart of task counts by status.
 
     Iterates ALL statuses present in ``snap.task_counts_by_status``,
@@ -23,7 +23,7 @@ class StatusChart(Static):
     def __init__(self, **kwargs) -> None:
         super().__init__("[dim]Loading…[/dim]", **kwargs)
         self.border_title = "Status Breakdown"
-        self._last_snapshot: StatusSnapshot | None = None
+        self.add_class("overview-card")
 
     def update_from_snapshot(self, snap: StatusSnapshot) -> None:
         """Rebuilds the chart from the current snapshot."""
@@ -40,11 +40,7 @@ class StatusChart(Static):
         )
         max_val = sorted_items[0][1] if sorted_items else 1
 
-        dynamic_width = (
-            max(10, self.size.width - LABEL_WIDTH - 8)
-            if self.size.width > 0
-            else BAR_WIDTH
-        )
+        dynamic_width = compute_bar_width(self.size.width)
 
         lines: list[str] = []
         for status, count in sorted_items:
@@ -52,8 +48,3 @@ class StatusChart(Static):
             lines.append(render_bar(status, count, max_val, color, bar_width=dynamic_width))
 
         self.update("\n".join(lines))
-
-    def on_resize(self, event) -> None:
-        """Re-render on resize to adjust bar width."""
-        if self._last_snapshot is not None:
-            self.update_from_snapshot(self._last_snapshot)

@@ -7,7 +7,7 @@ in a horizontal bar docked near the top of the TUI.
 
 from textual.widgets import Static
 
-from constants import STATUS_COLORS, PARCHMENT
+from constants import get_status_color
 from data import StatusSnapshot
 from security import sanitize_display_text
 
@@ -15,21 +15,13 @@ from security import sanitize_display_text
 class SummaryBar(Static):
     """Horizontal bar showing aggregate workspace statistics."""
 
-    DEFAULT_CSS = """
-    SummaryBar {
-        height: 3;
-        padding: 0 1;
-        content-align: left middle;
-    }
-    """
-
     def update_from_snapshot(self, snapshot: StatusSnapshot) -> None:
         """Refreshes the bar content from a new snapshot."""
         counts = snapshot.status_counts_dict()
         parts: list[str] = []
         for status in sorted(counts.keys()):
             count = counts[status]
-            color = STATUS_COLORS.get(status, PARCHMENT)
+            color = get_status_color(status)
             parts.append(
                 f"[{color}]{sanitize_display_text(status)}: "
                 f"{count}[/{color}]"

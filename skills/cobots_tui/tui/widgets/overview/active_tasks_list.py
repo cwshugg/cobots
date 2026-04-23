@@ -5,7 +5,7 @@ Renders colored status dots next to task short-IDs and truncated titles.
 Caps display at ``MAX_DISPLAY`` entries with an overflow message.
 """
 
-from textual.widgets import Static
+from tui.widgets.snapshot_widget import SnapshotWidget
 
 from constants import (
     DIM_PARCHMENT,
@@ -19,7 +19,7 @@ from security import sanitize_display_text
 MAX_DISPLAY: int = 8
 
 
-class ActiveTasksList(Static):
+class ActiveTasksList(SnapshotWidget):
     """Compact Rich-text list of active (non-completed) tasks.
 
     Uses colored ``●`` dots whose color is derived dynamically via
@@ -29,7 +29,7 @@ class ActiveTasksList(Static):
     def __init__(self, **kwargs) -> None:
         super().__init__("[dim]Loading…[/dim]", **kwargs)
         self.border_title = "Active Tasks"
-        self._last_snapshot: StatusSnapshot | None = None
+        self.add_class("overview-card")
 
     def update_from_snapshot(self, snap: StatusSnapshot) -> None:
         """Rebuilds the list from the current snapshot."""
@@ -73,8 +73,3 @@ class ActiveTasksList(Static):
             )
 
         self.update("\n".join(lines))
-
-    def on_resize(self, event) -> None:
-        """Re-render on resize to adjust text truncation."""
-        if self._last_snapshot is not None:
-            self.update_from_snapshot(self._last_snapshot)
