@@ -1,6 +1,6 @@
 ---
 name: cobots-tui
-description: Interactive TUI dashboard for the cobots workspace (with optional static overview).
+description: CLI for interactively viewing and monitoring cobots workspace status.
 ---
 
 # cobots-tui
@@ -79,12 +79,17 @@ It displays:
 * **Header and footer** — Standard Textual chrome showing the app title, workspace name,
   and available keybindings.
 
-The TUI auto-refreshes on a configurable interval (default 5 seconds). Data is loaded
+Tasks and reports are sorted newest-first by `created_timestamp`. The TUI
+auto-refreshes on a configurable interval (default 5 seconds). Data is loaded
 in a background thread so the interface remains responsive during refresh cycles.
+The cursor row position is preserved across auto-refresh cycles — if the selected
+row index exceeds the new row count after a refresh, it is clamped to the last row.
+
+Tab switching is instant (no sliding underline animation).
 
 Pressing `e` opens the selected task or report in `$EDITOR`. Pressing `v` opens it in
 `$PAGER` (defaults to `less`). Pressing `Enter` on a report row pushes a detail screen
-showing the full report body. Press `Escape` to return from the detail screen.
+showing the full report body. Press `Escape` or `q` to return from the detail screen.
 
 If the TUI is launched but stdout is not a TTY, the skill automatically falls back to
 `--show-overview` mode with a warning.
@@ -96,25 +101,37 @@ Renders a static, formatted snapshot to the terminal using the
 
 * A header panel with workspace name and snapshot timestamp
 * A summary panel with task counts by status
-* A task table (ID, status, title, owner, created)
-* A report table (ID, title, author, created)
+* A task table (ID, status, title, owner, created) — sorted newest-first
+* A report table (ID, title, author, created) — sorted newest-first
 * A recent activity panel
 
 This mode is non-interactive and exits immediately after printing. Useful for a quick
-glance or for capturing formatted output.
+glance or for capturing formatted output. Tasks and reports are sorted newest-first
+by `created_timestamp`, matching the TUI sort order.
 
 ## Color Scheme
 
 The TUI uses a custom color palette:
 
-| Name           | Hex       | Usage                                    |
-|----------------|-----------|------------------------------------------|
-| Warm Charcoal  | `#2D2B28` | Background (dark mode)                   |
-| Parchment      | `#F5ECD7` | Primary text                             |
-| Cerulean       | `#227C9D` | Accent 1 — links, cool tones, done tasks |
-| Apricot Cream  | `#FFCB77` | Accent 2 — warm highlights              |
-| Grapefruit     | `#FE6D73` | Accent 3 — alerts, emphasis             |
-| Dim Parchment  | `#8A8478` | Muted text — abandoned tasks            |
+| Name           | Hex       | Usage                                         |
+|----------------|-----------|-----------------------------------------------|
+| Warm Charcoal  | `#2D2B28` | Background (dark mode)                        |
+| Parchment      | `#F5ECD7` | Primary text                                  |
+| Cerulean       | `#227C9D` | Accent 1 — links, cool tones, done tasks      |
+| Apricot Cream  | `#FFCB77` | Accent 2 — warm highlights, pending tasks     |
+| Grapefruit     | `#FE6D73` | Accent 3 — alerts, emphasis, underway tasks   |
+| Dim Parchment  | `#8A8478` | Muted text — abandoned tasks                  |
+
+### Status Color Mappings
+
+Task statuses are color-coded throughout the TUI and overview output:
+
+| Status      | Color         | Hex       |
+|-------------|---------------|-----------|
+| `pending`   | Apricot Cream | `#FFCB77` |
+| `underway`  | Grapefruit    | `#FE6D73` |
+| `done`      | Cerulean      | `#227C9D` |
+| `abandoned` | Dim Parchment | `#8A8478` |
 
 ## TUI Keybindings
 

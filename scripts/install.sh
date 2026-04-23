@@ -110,7 +110,8 @@ function __install_skills()
             -name "*SKILL*.md" -or \
             -name "template.*.md" -or \
             -name "requirements.txt" -or \
-            -name "*.py" \
+            -name "*.py" -or \
+            -name "*.tcss" \
         \) -and \
         \( \
             -not -wholename "*venv*" \

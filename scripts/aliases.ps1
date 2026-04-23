@@ -20,7 +20,7 @@
 
 # Resolve the repository root from this script's location.
 # The script lives in scripts/, so we go up one level to reach the repo root.
-$script:__CobotRepoDir = Split-Path -Parent (Split-Path -Parent (Resolve-Path $MyInvocation.MyCommand.Path).ProviderPath)
+$script:__CobotRepoDir = Split-Path -Parent ((Resolve-Path $MyInvocation.MyCommand.Path).ProviderPath)
 
 # Path to the Python interpreter inside the shared virtual environment.
 $script:__CobotPython = Join-Path $script:__CobotRepoDir "skills\.venv\Scripts\python.exe"

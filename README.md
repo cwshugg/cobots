@@ -111,7 +111,7 @@ The following skills are used by the agents to track work and report progress:
 * [Cobots TUI](skills/cobots_tui/) - An interactive TUI dashboard for the cobots workspace.
     * Provides an interactive Textual TUI (default) and a `--show-overview` flag for a static Rich-formatted snapshot.
     * Humans use the TUI to browse tasks and reports, view/edit items, and monitor workspace activity with auto-refresh.
-    * Use `cobots-tui --show-overview` for a quick non-interactive snapshot.
+    * Use `python3 cobots-tui.py --show-overview` for a quick non-interactive snapshot.
 
 ### Utility Skills
 
