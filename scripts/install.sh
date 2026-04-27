@@ -213,6 +213,11 @@ function __main()
 
     __log_info "Installing tools to: ${install_path}"
 
+    # Does the install path not exist yet? If so, create it.
+    if [ ! -d "${install_path}" ]; then
+        mkdir -p "${install_path}"
+    fi
+
     # Install agents
     __install_agents "${install_path}"
     local retval=$?
