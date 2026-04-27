@@ -22,7 +22,7 @@ if _SKILL_DIR not in sys.path:
     sys.path.insert(0, _SKILL_DIR)
 
 # Activate the shared virtual environment so dependencies are available.
-from venv.venv import activate_venv
+from cobots_venv.venv import activate_venv
 activate_venv()
 
 from config import load_status_config

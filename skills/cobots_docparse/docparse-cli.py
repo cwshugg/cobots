@@ -21,7 +21,7 @@ _SKILLS_DIR = os.path.normpath(
 if _SKILLS_DIR not in sys.path:
     sys.path.insert(0, _SKILLS_DIR)
 
-from venv.venv import activate_venv
+from cobots_venv.venv import activate_venv
 activate_venv()
 
 from cobots_lib.docparse import (

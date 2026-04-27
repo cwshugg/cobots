@@ -114,7 +114,7 @@ function __install_skills()
             -name "*.tcss" \
         \) -and \
         \( \
-            -not -wholename "*venv*" \
+            -not -wholename "*/.venv/*" \
         \) \
         -print0 \
     )
