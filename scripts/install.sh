@@ -81,7 +81,7 @@ function __install_skills()
         mkdir -p "${skills_dst}"
     fi
 
-    # Make sure we have an skills source directory:
+    # Make sure we have a skills source directory:
     skills_src="${REPO_DIR}/skills"
     if [ ! -d "${skills_src}" ]; then
         __log_error "Skills source directory not found: ${skills_src}"
