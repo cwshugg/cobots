@@ -120,7 +120,7 @@ Performance is critical for KQL queries running against large datasets. Follow t
 
 ### 1. Filter Early and Aggressively
 
-Apply `where` clauses immediately after the table reference. Reduce data volume before any joins, projections, or aggregations.
+Apply `where` clauses immediately after the table reference. Reduce data volume before any joins, projections, or aggregations. Only reference needed tables — avoid `union *` with wildcards. Use the `table()` function with `DataScope` to scope queries to cached data when appropriate.
 
 ```kusto
 // Good: filter first
@@ -137,12 +137,12 @@ StormEvents
 
 ### 2. Order Predicates for Index Usage
 
-When combining multiple `where` conditions, order them to maximize index utilization:
+When combining multiple `where` conditions, order them to maximize index utilization. The optimizer may reorder predicates, but this is **not guaranteed** — always order manually:
 
 1. **`datetime` predicates first** — eliminates entire data shards via partitioning
-2. **`string` term-level predicates** (`has`, `has_cs`, `in`) — uses the term index
+2. **`string` term-level predicates** (`has`, `has_cs`, `in`) — uses the term index; order by selectivity (most selective first)
 3. **Selective numeric predicates**
-4. **Column-scanning predicates last** (`contains`, `matches regex`) — slowest
+4. **Column-scanning predicates last** (`contains`, `matches regex`) — slowest; order by column data size (smallest first)
 
 ### 3. Use `has` Instead of `contains`
 
@@ -192,13 +192,33 @@ T | extend Calc = SourceCol * 2 | where Calc > 200
 
 * Place the **smaller table on the left** side of standard joins.
 * Use `in` instead of `left semi join` for single-column filtering.
-* Use `lookup` instead of `join` when the right side is small (< tens of MB).
-* Use `hint.strategy=broadcast` when the left side is small (< 100 MB).
-* Use `hint.shufflekey=<key>` when both sides are large with high-cardinality keys.
+* Use `lookup` instead of `join` when the right side is small (< tens of MB). Runs broadcast by default.
+* Use `hint.strategy=broadcast` when the left side is small (< 100 MB). **The query will fail if the left side exceeds this limit.** Check with: `leftSide | summarize sum(estimate_data_size(*))`.
+* Use `hint.shufflekey=<key>` when both sides are large with high-cardinality keys (> 1M distinct values). Shuffle distributes data across all cluster nodes by key.
+* Use `hint.num_partitions` to override the default partition count (= number of nodes) when the cluster has few nodes.
+
+**Strategy decision matrix:**
+
+| Scenario | Strategy |
+|---|---|
+| Left small (≤ 100 MB), right large | `hint.strategy=broadcast` |
+| Right small, left large | `lookup` operator |
+| Both sides large, high-cardinality key | `hint.shufflekey=<key>` |
+| High-cardinality `summarize` (> 1M groups) | `hint.shufflekey=<key>` |
+
+```kusto
+// Shuffle join — both sides large with high-cardinality key
+Customer
+| join hint.strategy = shuffle (Orders) on $left.c_custkey == $right.o_custkey
+
+// Shuffle summarize — high cardinality grouping
+Orders
+| summarize hint.strategy = shuffle arg_max(o_orderdate, o_totalprice) by o_custkey
+```
 
 ### 7. Materialize Repeated Subqueries
 
-When a `let`-bound tabular expression is used multiple times, wrap it in `materialize()` to compute it once. Push filters and projections inside the `materialize()` call to minimize cached data.
+When a `let`-bound tabular expression is used multiple times, wrap it in `materialize()` to compute it once. Push filters and projections inside the `materialize()` call to minimize cached data. The `materialize()` cache limit is **5 GB per node**.
 
 ```kusto
 let baseData = materialize(
@@ -213,6 +233,7 @@ baseData | summarize EventCount = count() by EventType
 ### 8. DateTime and Dynamic Column Tips
 
 * Store dates as `datetime`, not `long`. Convert Unix timestamps at ingestion time using update policies.
+* Define ID columns as `string` even if values are numeric — string indexing is more sophisticated and provides better filtering.
 * For dynamic column lookups on large datasets, pre-filter with `has` before parsing:
 
 ```kusto
@@ -225,7 +246,144 @@ T | where DynamicCol.Key == "Rare"
 
 ### 9. Limit Results on Unknown Datasets
 
-When exploring unfamiliar data, always append `| take N` or `| count` to avoid returning excessive data.
+When exploring unfamiliar data, always append `| take N` or `| count` to avoid returning excessive data. Default result truncation is **500,000 records** or **64 MB** — queries exceeding these limits are truncated silently.
+
+### 10. Schema Design for Performance
+
+* Avoid large sparse tables with many columns — use `dynamic` columns for sparse properties, but promote frequently-filtered properties to their own typed column.
+* Denormalize data to avoid expensive joins at query time.
+* Use update policies to transform data at ingestion time (timestamp conversion, field extraction) rather than at query time.
+
+**Partitioning policy** — only set one in these specific scenarios:
+
+* **Frequent filters on medium/high cardinality `string`/`guid` column** (10K+ distinct values) — use hash partition with `PartitionAssignmentMode = "Uniform"`.
+* **Frequent aggregations/joins on high cardinality `string`/`guid` column** (1M+ distinct values) — use hash partition with `PartitionAssignmentMode = "ByPartition"`.
+* **Out-of-order `datetime` ingestion** — use uniform range datetime partition key.
+
+Key thresholds: recommended `MaxPartitionCount` is **128** (range 1–2048; higher values add significant overhead). Compressed data per partition should be at **least 1 GB**. Datetime `RangeSize` should start at **1 day** minimum. Partitioning only runs on hot extents.
+
+### 11. Caching Behavior
+
+* **Hot cache:** Local SSD storage (95% of SSD) for fast access. **Cold cache:** Remote storage (5% SSD reserved for cold access).
+* Default policy is `null` = all data is hot. Table-level policy overrides database-level policy.
+* Scope queries to hot cache for dashboard-style queries:
+
+```kusto
+set query_datascope = 'hotcache';
+MyTable | where Timestamp > ago(7d) | count
+```
+
+**Query results cache** — enable for repeated identical queries (e.g., dashboards):
+
+```kusto
+set query_results_cache_max_age = time(5m);
+MyTable | where CreatedAt > ago(180d) | summarize arg_max(CreatedAt, Type) by Id
+```
+
+* Cache capacity: **1 GB per node** (LRU eviction). Max cached result: **16 MB**.
+* Two queries are "identical" when they share the same UTF-8 text, database, and client request properties.
+* Use `query_results_cache_per_shard` for shard-level caching on live dashboards.
+* For high-concurrency dashboards, use weak consistency with query affinity (`weakconsistency_by_query`) to route identical queries to the same node, maximizing cache hits.
+
+### 12. Materialized Views
+
+Use materialized views for commonly repeated aggregations over large tables, deduplication (`take_any(*)`), or to allow shorter retention on the source table.
+
+* **Always query via `materialized_view('ViewName')`** — this reads only the pre-computed part (no delta processing at query time). Querying by view name directly combines materialized + delta parts, which is slower.
+* Recommended ingestion rate to source table: **≤ 1–2 GB/sec**.
+* Views work best when updated records are a small subset of total materialized records.
+* Force shuffle on materialized view queries with high-cardinality keys:
+
+```kusto
+set materialized_view_shuffle = dynamic([{"Name": "ViewName", "Keys": ["Id"]}]);
+ViewName
+```
+
+### 13. Cross-Cluster and Cross-Database Queries
+
+* Use unqualified names for local entities — avoids cross-cluster overhead.
+* For cross-cluster joins, run the query on the cluster where **most data resides**.
+* Result truncation applies to cross-cluster subqueries by default.
+* Qualified names (`cluster("X").database("DB").T`) are short-circuited when they reference the local database, but avoid relying on this.
+
+### 14. Query Diagnostics and Profiling
+
+Use `.show queries` to identify slow or expensive queries:
+
+```kusto
+// Find slow queries from the last hour
+.show queries
+| where StartedOn > ago(1h)
+| where State == "Completed"
+| where Duration > 30s
+| project Text, Duration, TotalCpu, MemoryPeak, ScannedExtentsStatistics
+| order by Duration desc
+| take 20
+```
+
+Key diagnostic columns: `Duration` (server-side time), `TotalCpu` (CPU consumed), `MemoryPeak` (peak memory), `CacheStatistics` (hot/cold cache hit ratios), `ScannedExtentsStatistics` (shards scanned — high values indicate poor filtering).
+
+Use `.show running queries` to monitor in-flight queries.
+
+### 15. `set` Statement Performance Options
+
+Key request properties for tuning query execution:
+
+| Option | Purpose |
+|---|---|
+| `query_results_cache_max_age` | Enable results cache with max staleness (timespan) |
+| `query_results_cache_per_shard` | Shard-level caching for live dashboards (bool) |
+| `query_datascope` | Scope to `hotcache`, `all`, or `default` |
+| `notruncation` | Disable result truncation (default: 500K records / 64 MB) |
+| `truncationmaxrecords` | Override max records limit |
+| `maxmemoryconsumptionperiterator` | Max memory per query operator (max: 30 GB) |
+| `query_fanout_nodes_percent` | % of nodes for fan-out (reduce for background jobs) |
+| `query_fanout_threads_percent` | % of threads for fan-out (reduce for background jobs) |
+
+Note: `servertimeout` (default 4 min, max 1 hour), `truncationmaxsize`, `norequesttimeout`, and `query_results_cache_force_refresh` can only be set as client request properties, not via `set` statements.
+
+### 16. Capacity and Throttling Awareness
+
+Be aware of default query limits to avoid unexpected truncation or failures:
+
+| Limit | Default |
+|---|---|
+| Result records | 500,000 |
+| Result data size | 64 MB |
+| Memory per iterator | System default (max 30 GB) |
+| String accumulation per operator | 8 GB |
+| Server timeout (queries) | 4 minutes |
+| Server timeout (commands) | 10 minutes |
+| Request concurrency | Cores-Per-Node × 10 |
+
+For high-concurrency scenarios, strong consistency (the default) can bottleneck on the admin node. Switch to weak consistency to horizontally scale query processing across all nodes.
+
+### 17. Ingestion Impact on Query Performance
+
+Ingestion strategy affects query performance downstream:
+
+* **Streaming ingestion** (< 1s latency) creates many small extents, increasing merge overhead. Limit: **4 MB per request**, recommended throughput **< 4 GB/hour per table**. Best for low-volume, many-table scenarios.
+* **Queued (batch) ingestion** is better for high-throughput tables — produces fewer, larger extents that are more efficient to query.
+* CSV format is preferred over JSON for ingestion performance.
+* Use update policies to transform data at ingestion time (timestamp conversion, field extraction) rather than performing expensive transformations in every query.
+
+### 18. Time-Series Performance Patterns
+
+* Always filter by time first to leverage the datetime index.
+* Use `make-series` instead of `summarize ... by bin()` for time-series data — it fills gaps and enables built-in anomaly detection and forecasting functions.
+* Apply `hint.shufflekey` on the grouping key for high-cardinality time series:
+
+```kusto
+// Efficient time-series query with shuffle
+MyTable
+| where Timestamp > ago(7d)
+| make-series hint.shufflekey = DeviceId avg(Value) default=0
+    on Timestamp in range(ago(7d), now(), 1h) by DeviceId
+```
+
+* For billion+ row scans, consider sampling: `T | where rand() < 0.1` or `T | where hash(UserId, 10) == 1`.
+* Use materialized views for repeated aggregation patterns on time-series data.
+* Scope dashboard queries to hot cache with `set query_datascope = 'hotcache';`.
 
 ## Anti-Patterns to Avoid
 
