@@ -449,3 +449,4 @@ Key differences from SQL:
 * The default join is `innerunique`, not `inner`.
 * KQL has no `INSERT`, `UPDATE`, or `DELETE` — it is read-only.
 * You can translate SQL to KQL by prefixing a SQL query with `-- explain`.
+
