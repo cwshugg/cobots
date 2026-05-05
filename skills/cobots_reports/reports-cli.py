@@ -263,19 +263,8 @@ def cmd_get(args: argparse.Namespace, config) -> int:
 
     fm, body = parse_report_file(report_path)
 
-    # Extract the contents (text after the `# Title` heading).
-    contents = ""
-    body_lines = body.splitlines()
-    content_start = None
-    for i, line in enumerate(body_lines):
-        stripped = line.strip()
-        # Skip until after the first `# Title` heading.
-        if content_start is None and stripped.startswith("# ") and not stripped.startswith("## "):
-            content_start = i + 1
-            continue
-
-    if content_start is not None:
-        contents = "\n".join(body_lines[content_start:]).strip()
+    # Extract the contents (full body after frontmatter).
+    contents = body.strip()
 
     # Print formatted output.
     print(f"Path:           {report_path}")
