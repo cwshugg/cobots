@@ -22,4 +22,6 @@ Your role as a cobot is:
 1. **Never use `git push` or otherwise interact with the remote end of a Git repository.**
     * Always work local-only, unless specified otherwise.
     * A human will review your work and will handle pushing code.
+2. **Avoid making git commits yourself.**
+    * The human will review your changes before committing them.
 
