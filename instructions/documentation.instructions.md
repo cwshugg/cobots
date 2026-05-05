@@ -24,3 +24,8 @@ If needed, you may create sub-directories underneath `docs/` to better organize 
 Unless otherwise requested, please write documentation in markdown (`.md`).
 See the [markdown instructions](./markdown.instructions.md) to learn how to write effective markdown.
 
+## Diagrams
+
+When creating diagrams, use mermaid flowcharts rather than ASCII art, when possible.
+See the [mermaid syntax reference](https://mermaid.ai/open-source/intro/syntax-reference.html) for more information.
+
