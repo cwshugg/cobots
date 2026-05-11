@@ -21,7 +21,12 @@ from cobots_venv.venv import activate_venv
 activate_venv()
 
 from cobots_lib.workspace.config import CobotsConfig
-from cobots_lib.workspace.constants import REPORTS_DIR_NAME, TASKS_DIR_NAME
+from cobots_lib.workspace.constants import (
+    CONFIG_FILE_NAME,
+    REPORTS_DIR_NAME,
+    TASKS_DIR_NAME,
+    WORKING_DIR_NAME,
+)
 from cobots_lib.workspace.topic import generate_default_topic
 from cobots_lib.workspace.working_dir import resolve_config_path, resolve_working_dir
 
@@ -97,8 +102,16 @@ def main() -> int:
         return 0
 
     if args.init:
-        working_dir = resolve_working_dir(wp)
-        config_path = resolve_config_path(wp)
+        # When --init is used without an explicit --workspace-path, always
+        # create the workspace in the current working directory instead of
+        # walking up and reusing a parent workspace.
+        if wp is None:
+            working_dir = os.path.join(
+                os.getcwd(), WORKING_DIR_NAME
+            )
+        else:
+            working_dir = resolve_working_dir(wp)
+        config_path = os.path.join(working_dir, CONFIG_FILE_NAME)
         tasks_dir = os.path.join(working_dir, TASKS_DIR_NAME)
         reports_dir = os.path.join(working_dir, REPORTS_DIR_NAME)
 
