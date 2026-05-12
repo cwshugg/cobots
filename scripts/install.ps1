@@ -248,7 +248,7 @@ function __main {
     }
 
     # Install the aliases file for easier skill invocation, if it exists.
-    $aliases_src = Join-Path $script:RepoDir "scripts" "aliases.ps1"
+    $aliases_src = Join-Path (Join-Path $script:RepoDir "scripts") "aliases.ps1"
     if (Test-Path $aliases_src) {
         $aliases_dst = Join-Path $target_path "aliases.ps1"
         Copy-Item -Path $aliases_src -Destination $aliases_dst -Force
