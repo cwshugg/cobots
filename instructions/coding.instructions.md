@@ -72,6 +72,7 @@ For detailed testing guidelines, see [testing.instructions.md](./testing.instruc
 ## Warnings & Errors
 
 When building code, please treat all warnings and errors as signals, not noise.
+Finalized code should build without a *single* compiler warning or error.
 
 ## Comments and In-Code Documentation
 
@@ -84,6 +85,18 @@ Please comment the code following these guidelines:
     * All global-scope, file-scope, etc., definitions of consts and other values
 * When necessary, reference other functions or files in your comments by specifying their exact names within backticks (ex: `function_name`).
 * Future areas of improvement should be documented.
+
+Things you must avoid while writing comments:
+
+* You must have absolutely *zero* mentions of people, other agents, cobots task IDs, references to code review feedback points, or *any* other metadata that is in your context during the development process (unless explicitly asked to).
+    * **Examples of what to avoid:**
+        * `// This function now accepts an additional parameter (Code Review - 1.3a)`
+        * `// This constant is used below and replaces a previously hard-coded value (P6)`
+        * `// - Written by Byteboy`
+        * `// This function was changed to do ... as requested by Connor`
+* You must have absolutely *zero* references the previous state of the code.
+  You do not need to explain the reasoning or the differences between the current state versus the old state.
+    * The goal with commenting is to describe *the code*, only in its *current state*.
 
 ## Code Style
 

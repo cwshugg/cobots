@@ -29,6 +29,18 @@ The goal of a code review is to maximize quality and clarity of the changes made
     * Will it be needed in the future?
     * Should it be removed?
 
+### Commenting
+
+* Do code comments describe the code, *only* the code, and *only* the *current state* of the code?
+    * Unless for a special reason, comments should not be describing a "previous implementation" or "a recent change".
+    * Comments should be timeless and apply to exactly the code in its current state.
+* Are there comments that contain references to any metadata that does not belong in the code?
+  These should be removed.
+    * Examples:
+        * The names of humans or other agents
+        * Cobots task IDs
+        * Code review feedback points
+
 ### Documentation and Style
 
 * Are there outdated comments that need updating?
