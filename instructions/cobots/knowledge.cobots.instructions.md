@@ -29,13 +29,6 @@ When writing a knowledge base entry:
 * Choose appropriate descriptive tags (see below for more information)
 * Keep the information as concise as possible without losing any information.
 
-### Tags
-
-Knowledge base entries can (and should) be assigned one or more **tags**.
-These tags are used to organize and categorize the various knowledge base entries.
-
-For example, if you create an entry describing how to use Git to work with Rust code, you might tag the entry with the `git` and `rust` tags.
-
 ### Entry Formatting
 
 Please use the cobots knowledge CLI skill to create knowledge base entry files.
@@ -47,4 +40,13 @@ When creating an entry, please specify your name as the author.
 
 Please use the cobots workspace CLI skill to understand where to store these knowledge entries.
 Use the workspace CLI to initialize the cobots' working directory if it hasn't already been initialized.
+
+### Tags
+
+Knowledge base entries can (and should) be assigned one or more **tags**.
+These tags are used to organize and categorize the various knowledge base entries.
+
+For example, if you create an entry describing how to use Git to work with Rust code, you might tag the entry with the `git` and `rust` tags.
+
+Use the cobots knowledge CLI to query for existing tags in the knowledge base; if existing tags can be used to tag this new entry, use them instead of creating new ones.
 
