@@ -114,10 +114,18 @@ function __install_skills {
     $skill_count = 0
     $skill_files = Get-ChildItem -Path $skills_src -Recurse -File |
         Where-Object {
+            # Exclude anything inside a `.venv/` directory (the Python virtual
+            # environment) at any nesting depth. Guard against both Windows
+            # backslash and forward-slash separators so the check is robust.
+            $_.FullName -notlike "*\.venv\*" -and
+            $_.FullName -notlike "*/.venv/*"
+        } |
+        Where-Object {
             $_.Name -like "*SKILL*.md" -or
             $_.Name -like "template.*.md" -or
             $_.Name -eq "requirements.txt" -or
-            $_.Extension -eq ".py"
+            $_.Extension -eq ".py" -or
+            $_.Extension -eq ".tcss"
         }
 
     foreach ($skill_file in $skill_files) {
