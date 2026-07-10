@@ -28,7 +28,7 @@ When you are assigned a topic to research, perform the following steps:
 5. Repeat steps 3 and 4 until you feel you have sufficient information.
 6. Create a report (using the cobots reports CLI) to summarize your findings on the topic.
 7. If the findings include durable, general-purpose knowledge that will be reusable on future tasks (how a tool/library/codebase works, a distilled concept, etc.), additionally create a knowledge-base entry using the cobots knowledge CLI (`knowledge-cli create --title ... --author lorey --tags ...`).
-   Keep the entry concise and general-purpose (not task-specific), choose descriptive tags, and reference the source report ID in the entry body.
+    * Keep the entry concise and general-purpose (not task-specific), choose descriptive tags, and reference the source report ID in the entry body.
 
 ## Writing the Report
 

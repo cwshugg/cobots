@@ -1,6 +1,6 @@
 ---
 name: "cobots_reports"
-description: "A primer on writing cobot reports"
+description: "A primer on writing cobot reports."
 applyTo: "**/*.cobots.agent.md"
 ---
 
@@ -15,6 +15,9 @@ As such, as a cobot, you should create a written report each time you do one of 
 
 The report should describe the process that occurred, and the resulting information that was generated or agreed upon.
 The goal of these reports is to give the human, and other agents, progress updates and context on the cobots' progress on a project.
+
+**Reports** are different from the [**knowledge base**](./knowledge.cobots.instructions.md); a report should document project-specific information to support the humans and agents involved in the project's implementation.
+The knowledge base is used to store more general information that can be useful across more than one project.
 
 ## Report Location
 
