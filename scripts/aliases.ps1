@@ -19,9 +19,19 @@
 #   cobots-tasks list --status done
 
 
-# Resolve the repository root from this script's location.
-# The script lives in scripts/, so we go up two levels to reach the repo root.
-$script:__CobotRepoDir = Split-Path -Parent (Split-Path -Parent ((Resolve-Path $MyInvocation.MyCommand.Path).ProviderPath))
+# Resolve the base directory that contains the skills/ tree from this script's
+# location. Two layouts are supported:
+#   - Installed: the aliases file sits flat in the install root (e.g.
+#     ~/.copilot/aliases.ps1) next to a skills/ subdirectory, so the base dir is
+#     the file's own directory.
+#   - Repo checkout: the aliases file lives in scripts/, so the base dir is one
+#     level up (the repo root, where skills/ lives).
+# Detect which layout applies by checking for a skills/ subdirectory.
+$script:__CobotBaseDir = Split-Path -Parent ((Resolve-Path $MyInvocation.MyCommand.Path).ProviderPath)
+if (-not (Test-Path (Join-Path $script:__CobotBaseDir "skills") -PathType Container)) {
+    $script:__CobotBaseDir = Split-Path -Parent $script:__CobotBaseDir
+}
+$script:__CobotRepoDir = $script:__CobotBaseDir
 
 # Path to the Python interpreter inside the shared virtual environment.
 $script:__CobotPython = Join-Path $script:__CobotRepoDir "skills\.venv\Scripts\python.exe"

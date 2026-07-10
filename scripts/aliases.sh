@@ -20,9 +20,19 @@
 #   cobots-tasks list --status done
 
 
-# Resolve the repository root from this script's location.
-# The script lives in scripts/, so we go up one level to reach the repo root.
-__COBOTS_REPO_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")"
+# Resolve the base directory that contains the skills/ tree from this script's
+# location. Two layouts are supported:
+#   - Installed: the aliases file sits flat in the install root (e.g.
+#     ~/.copilot/aliases.sh) next to a skills/ subdirectory, so the base dir is
+#     the file's own directory.
+#   - Repo checkout: the aliases file lives in scripts/, so the base dir is one
+#     level up (the repo root, where skills/ lives).
+# Detect which layout applies by checking for a skills/ subdirectory.
+__COBOTS_BASE_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+if [ ! -d "${__COBOTS_BASE_DIR}/skills" ]; then
+    __COBOTS_BASE_DIR="$(realpath "${__COBOTS_BASE_DIR}/..")"
+fi
+__COBOTS_REPO_DIR="${__COBOTS_BASE_DIR}"
 
 # Path to the Python interpreter inside the shared virtual environment.
 __COBOTS_PYTHON="${__COBOTS_REPO_DIR}/skills/.venv/bin/python3"
