@@ -10,7 +10,8 @@ A CLI skill for managing the cobots workspace.
 ## Description
 
 This skill resolves and manages the `.cobots/` workspace directory, which contains the
-config file, tasks, and reports. Locations are resolved using the following strategy
+config file, tasks, reports, knowledge-base entries, and a scratch working area.
+Locations are resolved using the following strategy
 (in order):
 
 1. **Workspace lookup** — Walk up from the current directory looking for an existing `.cobots/` directory.
@@ -41,7 +42,7 @@ python workspace-cli.py --init --name "my-project"
 * `--show-config-path` - Print the resolved config file path without modifying anything.
 * `--show-workspace-path` - Print the resolved working directory path without modifying anything.
 * `--show-workspace-name` - Print the current workspace name from the config and exit.
-* `--init` - Initialize the full workspace: creates `.cobots/`, `cobots-config.yaml`, `tasks/`, and `reports/`.
+* `--init` - Initialize the full workspace: creates `.cobots/`, `cobots-config.yaml`, `tasks/`, `reports/`, `knowledge/`, and `scratch/`.
 * `--name` - Workspace name to set during `--init` (defaults to empty string).
 
 ## Examples

@@ -194,11 +194,16 @@ class CobotsConfig:
     # Default length (in hex characters) for randomly generated report IDs.
     DEFAULT_REPORT_ID_LENGTH = 16
 
+    # Default length (in hex characters) for randomly generated knowledge
+    # entry IDs.
+    DEFAULT_KNOWLEDGE_ID_LENGTH = 16
+
     def __init__(
         self,
         task_status_values: list[str] | None = None,
         task_id_length: int | None = None,
         report_id_length: int | None = None,
+        knowledge_id_length: int | None = None,
         ntfy: "NtfyConfig | None" = None,
         workspace_name: str = "",
         status: "StatusConfig | None" = None,
@@ -219,6 +224,11 @@ class CobotsConfig:
             if report_id_length is not None
             else self.DEFAULT_REPORT_ID_LENGTH
         )
+        self.knowledge_id_length = (
+            knowledge_id_length
+            if knowledge_id_length is not None
+            else self.DEFAULT_KNOWLEDGE_ID_LENGTH
+        )
         self.ntfy = ntfy if ntfy is not None else NtfyConfig()
         self.workspace_name: str = workspace_name
         self.status = status if status is not None else StatusConfig()
@@ -230,6 +240,7 @@ class CobotsConfig:
             "task_status_values": self.task_status_values,
             "task_id_length": self.task_id_length,
             "report_id_length": self.report_id_length,
+            "knowledge_id_length": self.knowledge_id_length,
             "ntfy": self.ntfy.to_dict(),
             "status": self.status.to_dict(),
         }
@@ -250,6 +261,7 @@ class CobotsConfig:
             task_status_values=data.get("task_status_values"),
             task_id_length=data.get("task_id_length"),
             report_id_length=data.get("report_id_length"),
+            knowledge_id_length=data.get("knowledge_id_length"),
             ntfy=NtfyConfig.from_dict(data.get("ntfy", {})),
             workspace_name=data.get("workspace_name", ""),
             status=StatusConfig.from_dict(data.get("status", {})),

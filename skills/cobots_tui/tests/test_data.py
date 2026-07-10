@@ -20,7 +20,12 @@ from data import (
     _read_body_safe,
     MAX_FILE_SIZE,
 )
-from tests.helpers import create_mock_workspace, write_task_file, write_report_file
+from tests.helpers import (
+    create_mock_workspace,
+    write_task_file,
+    write_report_file,
+    write_knowledge_file,
+)
 
 
 class TestLoadTaskValid(unittest.TestCase):
@@ -114,6 +119,7 @@ class TestLoadSnapshotEmpty(unittest.TestCase):
             self.assertEqual(len(snap.tasks), 0)
             self.assertEqual(len(snap.reports), 0)
             self.assertEqual(snap.report_count, 0)
+            self.assertEqual(snap.knowledge_count, 0)
             self.assertEqual(len(snap.activity_timeline), 0)
 
 
@@ -142,6 +148,30 @@ class TestLoadSnapshotAggregation(unittest.TestCase):
             self.assertEqual(dict(snap.task_counts_by_status).get("done"), 1)
             self.assertEqual(dict(snap.task_counts_by_owner).get("alice"), 2)
             self.assertEqual(dict(snap.task_counts_by_owner).get("bob"), 1)
+
+
+class TestLoadSnapshotKnowledgeCount(unittest.TestCase):
+    """load_snapshot counts knowledge entries in the workspace store."""
+
+    def test_counts_knowledge_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = create_mock_workspace(tmp)
+            knowledge_dir = os.path.join(ws, "knowledge")
+
+            write_knowledge_file(knowledge_dir, entry_id="know0001aaa00001")
+            write_knowledge_file(knowledge_dir, entry_id="know0002bbb00002")
+
+            snap = load_snapshot(workspace_path=ws)
+
+            self.assertEqual(snap.knowledge_count, 2)
+
+    def test_zero_when_store_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = create_mock_workspace(tmp)
+
+            snap = load_snapshot(workspace_path=ws)
+
+            self.assertEqual(snap.knowledge_count, 0)
 
 
 class TestActivityTimelineOrdering(unittest.TestCase):

@@ -1,8 +1,8 @@
 """
 summary_bar.py - Aggregate statistics bar widget.
 
-Displays task counts by status, total reports, and last refresh time
-in a horizontal bar docked near the top of the TUI.
+Displays task counts by status, total reports, total knowledge entries,
+and last refresh time in a horizontal bar docked near the top of the TUI.
 """
 
 from textual.widgets import Static
@@ -30,6 +30,7 @@ class SummaryBar(Static):
         text = (
             f"[bold]Tasks:[/bold] {task_summary}  "
             f"[bold]Reports:[/bold] {snapshot.report_count}  "
+            f"[bold]Knowledge:[/bold] {snapshot.knowledge_count}  "
             f"[dim]Updated: "
             f"{sanitize_display_text(snapshot.snapshot_timestamp)}[/dim]"
         )

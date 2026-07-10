@@ -1,7 +1,7 @@
 # aliases.ps1 - PowerShell functions for invoking the cobots CLI tools.
 #
-# Provides convenience commands for the five cobots CLIs (tasks, reports,
-# workspace, ntfy, tui). Each function locates the repository root
+# Provides convenience commands for the six cobots CLIs (tasks, reports,
+# knowledge, workspace, ntfy, tui). Each function locates the repository root
 # automatically so the commands work regardless of the user's current directory.
 #
 # Usage:
@@ -10,6 +10,7 @@
 # After loading, the following commands are available:
 #   cobots-tasks     - Manage cobots tasks.
 #   cobots-reports   - Generate cobots reports.
+#   cobots-knowledge - Manage the cobots knowledge base.
 #   cobots-workspace - Manage the cobots workspace.
 #   cobots-ntfy      - Send notifications via ntfy.
 #   cobots-tui       - View workspace status (interactive TUI or overview).
@@ -35,6 +36,12 @@ function cobots-tasks {
 # Invokes the cobots reports CLI (skills/cobots_reports/reports-cli.py).
 function cobots-reports {
     $script_path = Join-Path $script:__CobotRepoDir "skills\cobots_reports\reports-cli.py"
+    & $script:__CobotPython $script_path @args
+}
+
+# Invokes the cobots knowledge CLI (skills/cobots_knowledge/knowledge-cli.py).
+function cobots-knowledge {
+    $script_path = Join-Path $script:__CobotRepoDir "skills\cobots_knowledge\knowledge-cli.py"
     & $script:__CobotPython $script_path @args
 }
 

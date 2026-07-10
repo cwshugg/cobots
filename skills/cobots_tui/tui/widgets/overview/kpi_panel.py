@@ -1,8 +1,8 @@
 """
 kpi_panel.py - Hero KPI numbers and completion gauge.
 
-Displays three Digits widgets (TASKS, ACTIVE, REPORTS) in a horizontal
-row, plus a single-line completion progress bar below them.
+Displays four Digits widgets (TASKS, ACTIVE, REPORTS, KNOWLEDGE) in a
+horizontal row, plus a single-line completion progress bar below them.
 """
 
 import warnings
@@ -46,6 +46,9 @@ class KpiPanel(SnapshotMixin, Widget):
             with Vertical(classes="kpi-card"):
                 yield Digits("0", id="kpi-reports")
                 yield Static("REPORTS", classes="kpi-label")
+            with Vertical(classes="kpi-card"):
+                yield Digits("0", id="kpi-knowledge")
+                yield Static("KNOWLEDGE", classes="kpi-label")
         yield Static("", id="kpi-completion-bar")
 
     def update_from_snapshot(self, snap: StatusSnapshot) -> None:
@@ -88,6 +91,12 @@ class KpiPanel(SnapshotMixin, Widget):
         try:
             self.query_one("#kpi-reports", Digits).update(
                 str(snap.report_count)
+            )
+        except Exception as exc:
+            warnings.warn(f"KPI update error: {exc}")
+        try:
+            self.query_one("#kpi-knowledge", Digits).update(
+                str(snap.knowledge_count)
             )
         except Exception as exc:
             warnings.warn(f"KPI update error: {exc}")

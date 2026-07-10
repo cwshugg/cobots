@@ -603,5 +603,51 @@ class TestCobotsConfigReprTokenMasking(unittest.TestCase):
         self.assertTrue(repr(cfg).startswith("CobotsConfig("))
 
 
+# ===================================================================
+# CobotsConfig tests (knowledge_id_length)
+# ===================================================================
+
+
+class TestCobotsConfigKnowledgeIdLength(unittest.TestCase):
+    """Verify the `knowledge_id_length` field defaults and round-trips."""
+
+    def test_default_value(self) -> None:
+        cfg = CobotsConfig()
+        self.assertEqual(
+            cfg.knowledge_id_length,
+            CobotsConfig.DEFAULT_KNOWLEDGE_ID_LENGTH,
+        )
+        self.assertEqual(cfg.knowledge_id_length, 16)
+
+    def test_custom_value_preserved(self) -> None:
+        cfg = CobotsConfig(knowledge_id_length=24)
+        self.assertEqual(cfg.knowledge_id_length, 24)
+
+    def test_included_in_to_dict(self) -> None:
+        cfg = CobotsConfig(knowledge_id_length=12)
+        self.assertEqual(cfg.to_dict()["knowledge_id_length"], 12)
+
+    def test_from_dict_reads_value(self) -> None:
+        cfg = CobotsConfig.from_dict({"knowledge_id_length": 20})
+        self.assertEqual(cfg.knowledge_id_length, 20)
+
+    def test_missing_key_falls_back_to_default(self) -> None:
+        # Backward compatibility: legacy config lacking the key uses default.
+        cfg = CobotsConfig.from_dict(
+            {"task_id_length": 8, "report_id_length": 8}
+        )
+        self.assertEqual(cfg.knowledge_id_length, 16)
+
+    def test_dict_round_trip(self) -> None:
+        original = CobotsConfig(knowledge_id_length=18)
+        restored = CobotsConfig.from_dict(original.to_dict())
+        self.assertEqual(restored.knowledge_id_length, 18)
+
+    def test_yaml_round_trip(self) -> None:
+        original = CobotsConfig(knowledge_id_length=22)
+        restored = CobotsConfig.from_yaml(original.to_yaml())
+        self.assertEqual(restored.knowledge_id_length, 22)
+
+
 if __name__ == "__main__":
     unittest.main()

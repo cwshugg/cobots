@@ -108,6 +108,41 @@ def write_report_file(
     return path
 
 
+def write_knowledge_file(
+    knowledge_dir: str,
+    entry_id: str = "eeee5555ffff6666",
+    title: str = "Test Knowledge Entry",
+    author: str = "scribs",
+    created_timestamp: str = "2026-04-22 11:30:00",
+    updated_timestamp: str = "2026-04-22 11:30:00",
+    tags: list[str] | None = None,
+    body: str = "Knowledge content here.",
+) -> str:
+    """Writes a sample ``.knowledge.md`` file and returns its path.
+
+    Creates the ``knowledge_dir`` if it does not already exist so that
+    callers can rely on this helper without a separate ``makedirs`` step.
+    """
+    os.makedirs(knowledge_dir, exist_ok=True)
+    tag_list = tags or []
+    tags_yaml = ", ".join(f'"{t}"' for t in tag_list)
+
+    path = os.path.join(knowledge_dir, f"{entry_id}.knowledge.md")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(textwrap.dedent(f"""\
+            ---
+            id: "{entry_id}"
+            title: "{title}"
+            author: "{author}"
+            created_timestamp: "{created_timestamp}"
+            updated_timestamp: "{updated_timestamp}"
+            tags: [{tags_yaml}]
+            ---
+            {body}
+        """))
+    return path
+
+
 def make_snapshot(**kwargs) -> StatusSnapshot:
     """Creates a :class:`StatusSnapshot` with sensible defaults.
 
@@ -124,6 +159,7 @@ def make_snapshot(**kwargs) -> StatusSnapshot:
         "report_count": 0,
         "activity_timeline": (),
         "snapshot_timestamp": "2026-04-22 12:00:00",
+        "knowledge_count": 0,
     }
     defaults.update(kwargs)
     return StatusSnapshot(**defaults)

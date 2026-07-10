@@ -221,6 +221,7 @@ class TestKpiPanel(unittest.TestCase):
             ),
             report_count=7,
             reports=tuple(_make_report(report_id=f"r{i}") for i in range(7)),
+            knowledge_count=4,
         )
 
         async def _run():
@@ -241,9 +242,11 @@ class TestKpiPanel(unittest.TestCase):
                     total = app.query_one("#kpi-total-tasks", Digits)
                     active = app.query_one("#kpi-active", Digits)
                     reports = app.query_one("#kpi-reports", Digits)
+                    knowledge = app.query_one("#kpi-knowledge", Digits)
                     self.assertEqual(total.value, "3")
                     self.assertEqual(active.value, "2")
                     self.assertEqual(reports.value, "7")
+                    self.assertEqual(knowledge.value, "4")
 
         asyncio.run(_run())
 

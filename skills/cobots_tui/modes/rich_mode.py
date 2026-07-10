@@ -31,7 +31,10 @@ def _build_summary_text(snapshot: StatusSnapshot) -> str:
             f"{count}[/{color}]"
         )
     task_summary = ", ".join(parts) if parts else "No tasks"
-    return f"Tasks: {task_summary}  |  Reports: {snapshot.report_count}"
+    return (
+        f"Tasks: {task_summary}  |  Reports: {snapshot.report_count}"
+        f"  |  Knowledge: {snapshot.knowledge_count}"
+    )
 
 
 def _build_task_table(snapshot: StatusSnapshot) -> Table:

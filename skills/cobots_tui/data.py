@@ -29,6 +29,7 @@ from cobots_lib.workspace.constants import (
     REPORT_FILE_SUFFIX,
 )
 from cobots_lib.parsing import parse_frontmatter, parse_discussion_headers
+from cobots_lib.workspace.knowledge import list_knowledge_files
 
 from security import validate_path_within_workspace
 
@@ -94,6 +95,7 @@ class StatusSnapshot:
     report_count: int
     activity_timeline: tuple[ActivityEvent, ...]
     snapshot_timestamp: str
+    knowledge_count: int = 0
 
     def status_counts_dict(self) -> dict[str, int]:
         """Returns ``task_counts_by_status`` as a plain ``dict``.
@@ -340,6 +342,9 @@ def load_snapshot(
     reports_list.sort(key=lambda r: r.created_timestamp, reverse=True)
     reports = tuple(reports_list)
 
+    # --- Count knowledge entries (reuses the cobots_lib helper) ---
+    knowledge_count = len(list_knowledge_files(workspace_path))
+
     # --- Aggregations ---
     status_counter: Counter[str] = Counter(t.status for t in tasks)
     owner_counter: Counter[str] = Counter(
@@ -363,4 +368,5 @@ def load_snapshot(
         report_count=len(reports),
         activity_timeline=timeline,
         snapshot_timestamp=now,
+        knowledge_count=knowledge_count,
     )

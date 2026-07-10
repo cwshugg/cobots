@@ -17,8 +17,17 @@ TASKS_DIR_NAME = "tasks"
 # The subdirectory under the working directory where report files are stored.
 REPORTS_DIR_NAME = "reports"
 
+# The subdirectory under the working directory where knowledge entries live.
+KNOWLEDGE_DIR_NAME = "knowledge"
+
+# The subdirectory used as a general temporary/scratch working area.
+SCRATCH_DIR_NAME = "scratch"
+
 # The file suffix for task files.
 TASK_FILE_SUFFIX = ".task.md"
 
 # The file suffix for report files.
 REPORT_FILE_SUFFIX = ".report.md"
+
+# The file suffix for knowledge entry files.
+KNOWLEDGE_FILE_SUFFIX = ".knowledge.md"

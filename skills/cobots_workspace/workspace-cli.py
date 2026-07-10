@@ -23,7 +23,9 @@ activate_venv()
 from cobots_lib.workspace.config import CobotsConfig
 from cobots_lib.workspace.constants import (
     CONFIG_FILE_NAME,
+    KNOWLEDGE_DIR_NAME,
     REPORTS_DIR_NAME,
+    SCRATCH_DIR_NAME,
     TASKS_DIR_NAME,
     WORKING_DIR_NAME,
 )
@@ -54,7 +56,8 @@ def main() -> int:
     parser.add_argument(
         "--init",
         action="store_true",
-        help="Initialize the full workspace (.cobots/, config, tasks/, reports/).",
+        help="Initialize the full workspace (.cobots/, config, tasks/, "
+        "reports/, knowledge/, scratch/).",
     )
     parser.add_argument(
         "--name",
@@ -114,6 +117,8 @@ def main() -> int:
         config_path = os.path.join(working_dir, CONFIG_FILE_NAME)
         tasks_dir = os.path.join(working_dir, TASKS_DIR_NAME)
         reports_dir = os.path.join(working_dir, REPORTS_DIR_NAME)
+        knowledge_dir = os.path.join(working_dir, KNOWLEDGE_DIR_NAME)
+        scratch_dir = os.path.join(working_dir, SCRATCH_DIR_NAME)
 
         already_exists = os.path.isfile(config_path)
 
@@ -137,6 +142,15 @@ def main() -> int:
 
         # 4. Create the reports directory.
         os.makedirs(reports_dir, exist_ok=True)
+
+        # 5. Create the knowledge directory (durable knowledge-base entries).
+        #    Created idempotently so re-initializing an older workspace that
+        #    predates the knowledge base adds the directory.
+        os.makedirs(knowledge_dir, exist_ok=True)
+
+        # 6. Create the scratch directory (general temporary working area).
+        #    Also created idempotently for the same reason as knowledge/.
+        os.makedirs(scratch_dir, exist_ok=True)
 
         if already_exists:
             print(f"Already initialized: {working_dir}")

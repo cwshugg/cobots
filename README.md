@@ -103,6 +103,9 @@ The following skills are used by the agents to track work and report progress:
         * Marking their statuses as "pending", "underway", "complete", etc.
 * [Cobots Reports CLI](skills/cobots_reports/) - A small CLI tool that creates `*.report.md` files under a working directory.
     * Reports represent write-ups created by the agents, such as architecture plans, code reviews, etc.
+* [Cobots Knowledge CLI](skills/cobots_knowledge/) - A small CLI tool that creates and queries `*.knowledge.md` entries under a working directory.
+    * Knowledge entries represent durable, reusable, tag-categorized knowledge that any agent can query, retrieve, edit, or delete.
+    * Entries are discoverable by boolean tag expressions (e.g. `git and (rust or c)`) and/or a regex over their title and content.
 * [Cobots Ntfy CLI](skills/cobots_ntfy/) - A small CLI tool that uses [ntfy.sh](https://ntfy.sh) to send me notifications on agent progress, updates, questions, etc.
     * By default, it is configured to run in "confidential" mode, meaning that only generic messages can be sent via [ntfy.sh](https://ntfy.sh) (such as "build finished", "waiting for input", etc.).
 

@@ -1,8 +1,8 @@
 #!/bin/bash
 # aliases.sh - Shell functions for invoking the cobots CLI tools.
 #
-# Provides convenience commands for the five cobots CLIs (tasks, reports,
-# workspace, ntfy, tui). Each function locates the repository root
+# Provides convenience commands for the six cobots CLIs (tasks, reports,
+# knowledge, workspace, ntfy, tui). Each function locates the repository root
 # automatically so the commands work regardless of the user's current directory.
 #
 # Usage:
@@ -11,6 +11,7 @@
 # After sourcing, the following commands are available:
 #   cobots-tasks     - Manage cobots tasks.
 #   cobots-reports   - Generate cobots reports.
+#   cobots-knowledge - Manage the cobots knowledge base.
 #   cobots-workspace - Manage the cobots workspace.
 #   cobots-ntfy      - Send notifications via ntfy.
 #   cobots-tui       - View workspace status (interactive TUI or overview).
@@ -21,7 +22,7 @@
 
 # Resolve the repository root from this script's location.
 # The script lives in scripts/, so we go up one level to reach the repo root.
-__COBOTS_REPO_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+__COBOTS_REPO_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")"
 
 # Path to the Python interpreter inside the shared virtual environment.
 __COBOTS_PYTHON="${__COBOTS_REPO_DIR}/skills/.venv/bin/python3"
@@ -37,6 +38,12 @@ function cobots-tasks()
 function cobots-reports()
 {
     "${__COBOTS_PYTHON}" "${__COBOTS_REPO_DIR}/skills/cobots_reports/reports-cli.py" "$@"
+}
+
+# Invokes the cobots knowledge CLI (skills/cobots_knowledge/knowledge-cli.py).
+function cobots-knowledge()
+{
+    "${__COBOTS_PYTHON}" "${__COBOTS_REPO_DIR}/skills/cobots_knowledge/knowledge-cli.py" "$@"
 }
 
 # Invokes the cobots workspace CLI (skills/cobots_workspace/workspace-cli.py).

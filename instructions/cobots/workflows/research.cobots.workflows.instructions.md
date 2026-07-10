@@ -23,7 +23,7 @@ A decision needs to be made about a technology choice, library selection, or app
 | Task # | Task Name | Owner | Depends On | Notes |
 |--------|-----------|-------|------------|-------|
 | 1 | Define Evaluation Criteria | Director | — | Director works with the human to define what matters (performance, maintainability, community support, license, security posture, etc.). |
-| 2 | Research Candidates | Researcher | 1 | Researcher researches each candidate against the evaluation criteria. Produces a comprehensive comparison report. |
+| 2 | Research Candidates | Researcher | 1 | Researcher researches each candidate against the evaluation criteria. Produces a comprehensive comparison report. Additionally, distill any durable, reusable findings into the knowledge base (`.cobots/knowledge/`) as tagged entries. |
 | 3 | Security Evaluation (conditional) | SecurityAnalyst | 2 | If security posture is an evaluation criterion or the candidates handle sensitive data, SecurityAnalyst reviews each candidate's security track record — CVE history, security practices, known vulnerabilities. |
 | 4 | Review Research | Scrutinizer | 2, 3 | Scrutinizer reviews the research for thoroughness, accuracy, and balanced analysis. |
 | 5 | Present Findings | Director | 4 | Director presents findings to the human for a decision. |
@@ -42,6 +42,7 @@ A decision needs to be made about a technology choice, library selection, or app
 
 * Evaluation criteria (in task discussions).
 * Research/comparison report.
+* Distilled knowledge-base entries (when findings are reusable), stored under `.cobots/knowledge/`.
 * Security evaluation (if applicable).
 * Review feedback.
 
