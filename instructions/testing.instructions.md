@@ -106,6 +106,12 @@ def test_discount_applied_to_order_total():
     assert total == 135.0
 ```
 
+## Test Behavior
+
+* Derive tests from each observed behavior and its expected result.
+    * Have the test assert the expected state/output for correctness; do not rely on "the test did not return an error" as the only verification of correctness.
+* For a bug fix, include the input or state that triggered the defect and assert the corrected behavior, so the test fails if that defect returns.
+
 ## Mocking and Stubbing
 
 * Mock external dependencies (network calls, databases, file I/O) — not the code under test.
@@ -118,7 +124,6 @@ def test_discount_applied_to_order_total():
 * Use factory functions or builders to create test data — avoid copy-pasting raw data across tests.
 * Keep test data minimal: include only the fields relevant to the test.
 * Use fixtures (setup/teardown) for shared preconditions, but avoid fixtures that are too large or too magical.
-* Clean up test state between runs. Tests should never depend on the order of execution.
 
 ## Coverage
 
@@ -130,16 +135,24 @@ def test_discount_applied_to_order_total():
 ## Testing Anti-Patterns
 
 * **Testing implementation details**: Tests should verify behavior (inputs → outputs), not internal state or private methods. Implementation changes should not break tests unless behavior changes.
-* **Flaky tests**: Tests that pass and fail intermittently erode trust in the test suite. Fix or quarantine flaky tests immediately.
+* **Flaky tests and test interdependence**: Tests must not pass and fail intermittently or depend on execution order or shared mutable state.
+    * Isolate process-global or shared mutable state, restore it reliably, and clean up test state between runs.
+    * Use synchronization and repeated runs for timing-sensitive code to establish that results are repeatable.
+    * Fix or quarantine flaky tests immediately.
 * **Slow tests**: A slow test suite discourages developers from running tests. Keep unit tests fast; run slow tests in CI.
-* **Test interdependence**: Tests should never depend on the execution order or shared mutable state from other tests.
 * **Excessive mocking**: If every dependency is mocked, the test may not be verifying real behavior. Balance mocking with integration-level tests.
 * **Copy-paste test code**: Repeated setup logic should be extracted into helpers or fixtures.
 * **Ignoring failures**: Never mark failing tests as "skip" or "expected failure" without a clear plan to fix them.
 
 ## Continuous Integration
 
-* Run the full test suite on every pull request.
+* CI must run the full test suite on every pull request.
 * Fail the build on any test failure — do not allow broken tests to be merged.
 * Run unit tests first (fast feedback), then integration tests, then E2E tests.
 * Report test results and coverage in a format that is easy to review (e.g., CI summary, coverage reports).
+
+## Validation and Evidence
+
+* During development, run the smallest directly relevant automated check first.
+* Before requesting review, run the repository-defined test gates that apply to the change.
+

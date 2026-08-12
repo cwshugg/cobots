@@ -12,6 +12,11 @@ It should be concise, but present all information necessary for a high-level und
 ## Documenting New Changes
 
 When writing documentation for new additions or changes, ensure all new changes are properly documented in the existing documentation.
+Focus on updating the documentation to describe the *current behavior* only; avoid making notes about previous or upcoming changes.
+
+For user-facing APIs, CLI commands, configuration options, defaults, error behavior, or examples, compare the documentation with the implemented source of truth.
+Do not describe planned or removed behavior as available; implement it, remove it, or qualify the documentation.
+Execute examples when the project provides a practical way to do so.
 
 ## File Structure
 

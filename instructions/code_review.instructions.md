@@ -13,7 +13,11 @@ The goal of a code review is to maximize quality and clarity of the changes made
 
 ### Testing
 
-* Have unit tests been written to exercise the new behavior?
+* Do the tests cover the changed contract on success, failure, and relevant boundaries?
+* For a bug fix, does a test exist that exercises the triggering scenario to ensure the bug is fixed?
+* Are there locations where an assertion could be added to verify behavior?
+* Do any tests depend on locale, environment variables, time, randomness, or concurrency?
+    * If so, are they isolated, restored, and synchronized so results are repeatable?
 
 ### Logging
 
@@ -45,6 +49,8 @@ The goal of a code review is to maximize quality and clarity of the changes made
 
 * Are there outdated comments that need updating?
 * Is there documentation that needs to be updated to reflect these code changes?
+* Does user-facing documentation accurately reflect the current implemented behavior?
+    * Verify APIs, CLI commands, configuration options, defaults, error behavior, and examples against [documentation.instructions.md](./documentation.instructions.md).
 * Does the code follow the style conventions of the rest of the project?
 * Is there a mixture of spaces and tabs in the file?
     * There should be a consistent choice.
@@ -60,15 +66,20 @@ The goal of a code review is to maximize quality and clarity of the changes made
 ### Design Choices
 
 * Is there repeated code that could be put into a function?
-    * **Scenario 1:** did the developer add two copies of the same code in his/her new code?
-    * **Scenario 2:** did the developer add one bit of code that copies from existing code?
-    * Code should be reused when possible; perhaps the repetition should be moved to a helper function or somewhere else where both places can access it.
+    * **Example scenario 1:** did the developer add two copies of the same code in his/her new code?
+    * **Example scenario 2:** did the developer add one bit of code that copies from existing code?
+    * Before requesting consolidation, make sure the two copies share a common understanding of program state, lifecycle, error handling, ownership, etc.
+        * If there are differences, consider a helper function that extracts only the common logic.
+    * See [coding.instructions.md](./coding.instructions.md) for the reuse standard.
 * How did the developer package/organize the code?
     * Is there a better way to package it such that it's more modular, more easily reusable, etc.?
     * Can functions be parameterized to save on code and reduce repetition?
 
-### Logic Errors
+### Logic Errors and Lifecycle
 
-* Check order of operations in code.
-    * Does something need parenthesis?
+* Is the order of operations correct?
+    * Does an expression need parentheses?
+* Do changed operations handle both success and failure exits?
+    * After acquiring a resource or causing an external side effect, does every exit branch perform the necessary cleanup/recovery/rollback/etc.?
+* Are invalid input and preconditions rejected before expensive or irreversible work?
 

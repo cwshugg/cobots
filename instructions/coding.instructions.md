@@ -19,8 +19,10 @@ This file describes a collection of best practices to follow when writing code.
 
 ### Reuse Code
 
-Do you see the same piece(s) of identical (or very similar) code being copy-pasted or repeated?
-If so, the code should, in almost every case, be consolidated into a helper function or macro (function is preferred in most cases).
+When the same or very similar logic appears in more than one place, consolidate it into shared code.
+Before consolidating, verify that the copies have the same externally observable behavior, error handling, ownership, lifecycle requirements, and relevant edge cases.
+Extract only stable, shared code into a small shared helper or module; keep genuinely different domain adapters or harnesses separate.
+Test the shared layer thoroughly, and retain adapter or integration tests that verify each caller is wired correctly.
 
 ### Use If-Return Structure ("Fail Fast")
 
