@@ -85,6 +85,7 @@ Please comment the code following these guidelines:
     * All data structures, enums, and other objects
     * All source code files (each file should have a brief header describing the code it contains)
     * All global-scope, file-scope, etc., definitions of consts and other values
+    * All code blocks within a function (a brief, 1-2 sentence comment should describe what each code block is doing).
 * When necessary, reference other functions or files in your comments by specifying their exact names within backticks (ex: `function_name`).
 * Future areas of improvement should be documented.
 

@@ -187,6 +187,10 @@ fi
     * If (and only if) stdout is pointing to a terminal, color should be written.
       Otherwise, color should *not* be written, such that the output can be cleanly parsed by other programs.
 
+## Patterns to Use
+
+* Whenever making a decision about behavior, always use `if ... then ... fi` syntax to be clear about what decisions are being made.
+
 ## Patterns to Avoid
 
 * Don't use `eval` — it is a common source of injection vulnerabilities.
