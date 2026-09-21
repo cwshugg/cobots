@@ -190,6 +190,9 @@ fi
 ## Patterns to Use
 
 * Whenever making a decision about behavior, always use `if ... then ... fi` syntax to be clear about what decisions are being made.
+* Always separate code blocks by a blank whitespace line to improve readability.
+* Always add a 1-2 sentence comment description above every code block in the script.
+    * Ex: `# Verify the contents of the curl output and ensure the package is present`
 
 ## Patterns to Avoid
 
