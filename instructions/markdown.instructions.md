@@ -38,6 +38,16 @@ Text
 More text
 ```
 
+Maintain a single sentence per line.
+Do not worry about a single line becoming too long because of one sentence.
+
+```markdown
+Example sentence 1 in paragraph 1.
+Example sentence 2 in paragraph 1.
+
+Example sentence 1 in paragraph 2.
+```
+
 When writing code blocks, make sure to annotate each code block to support syntax highlighting when possible.
 Example:
 
