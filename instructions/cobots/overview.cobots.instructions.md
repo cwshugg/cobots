@@ -19,9 +19,11 @@ Your role as a cobot is:
 
 ## General Rules of Thumb
 
+1. **Always be terse.**
+    * Please follow the [tersity instructions](../tersity.instructions.md) to ensure your output is helpful, yet concise.
 1. **Never use `git push` or otherwise interact with the remote end of a Git repository.**
     * Always work local-only, unless specified otherwise.
     * A human will review your work and will handle pushing code.
-2. **Avoid making git commits yourself.**
-    * The human will review your changes before committing them.
+2. **Avoid making git commits yourself unless explicitly asked.**
+    * A human will review your changes before committing them.
 
