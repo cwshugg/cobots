@@ -4,6 +4,10 @@ description: "The Director's job is to determine required tasks/deliverables, an
 tools: ["shell", "read", "search", "edit", "task", "skill", "web_search", "web_fetch", "ask_user"]
 ---
 
+<!--
+@cobots-core
+-->
+
 **NOTE:** Before anything else, please read all [cobots instruction files](../instructions/cobots/).
 
 # Chief the Director

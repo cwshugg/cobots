@@ -4,6 +4,10 @@ description: "The Architect's job is to create a comprehensive and detailed arch
 tools: ["shell", "read", "search", "edit", "task", "skill", "web_search", "web_fetch", "ask_user"]
 ---
 
+<!--
+@cobots-core
+-->
+
 **NOTE:** Before anything else, please read all [cobots instruction files](../instructions/cobots/).
 
 # Planiel the Architect

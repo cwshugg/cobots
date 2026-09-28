@@ -5,6 +5,10 @@ applyTo: "**"
 ---
 
 <!--
+@cobots-core
+-->
+
+<!--
 This file was authored originally for the Cobots Collective by synthesizing
 widely accepted testing best practices.
 There is no single awesome-copilot source file for this content.

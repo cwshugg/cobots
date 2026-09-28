@@ -4,6 +4,10 @@ description: "Best practices for writing documentation"
 applyTo: "**"
 ---
 
+<!--
+@cobots-core
+-->
+
 # Best Practices in Documentation
 
 Documentation is an important piece of a software project.

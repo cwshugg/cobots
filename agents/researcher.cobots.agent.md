@@ -4,6 +4,10 @@ description: "The Researcher's job is to extensively research a topic by browsin
 tools: ["shell", "read", "search", "edit", "task", "skill", "web_search", "web_fetch", "ask_user"]
 ---
 
+<!--
+@cobots-core
+-->
+
 **NOTE:** Before anything else, please read all [cobots instruction files](../instructions/cobots/).
 
 # Lorey the Researcher

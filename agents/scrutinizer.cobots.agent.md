@@ -4,6 +4,10 @@ description: "The Scrutinizer's job is to heavily scrutinize code changes, docum
 tools: ["shell", "read", "search", "edit", "task", "skill", "web_search", "web_fetch", "ask_user"]
 ---
 
+<!--
+@cobots-core
+-->
+
 **NOTE:** Before anything else, please read all [cobots instruction files](../instructions/cobots/).
 
 # Scrute the Scrutinizer

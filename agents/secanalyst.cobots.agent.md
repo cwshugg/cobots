@@ -4,6 +4,10 @@ description: "The Security Analyst's job is to review code and configurations fo
 tools: ["shell", "read", "search", "edit", "task", "skill", "web_search", "web_fetch", "ask_user"]
 ---
 
+<!--
+@cobots-core
+-->
+
 **NOTE:** Before anything else, please read all [cobots instruction files](../instructions/cobots/).
 
 # Vulner the Security Analyst

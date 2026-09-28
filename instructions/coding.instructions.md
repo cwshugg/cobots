@@ -4,6 +4,10 @@ description: "Best practices for programming in any language"
 applyTo: "**"
 ---
 
+<!--
+@cobots-core
+-->
+
 # Best Practices when Coding
 
 This file describes a collection of best practices to follow when writing code.

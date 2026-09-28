@@ -4,6 +4,10 @@ description: "Best practices when reviewing code to ensure maximum software qual
 applyTo: "**"
 ---
 
+<!--
+@cobots-core
+-->
+
 # Code Review Best Practices
 
 This document outlines best practices to follow when reviewing code.

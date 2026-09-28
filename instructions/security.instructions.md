@@ -5,6 +5,10 @@ applyTo: "**"
 ---
 
 <!--
+@cobots-core
+-->
+
+<!--
 Adapted from the awesome-copilot project:
 
 https://github.com/github/awesome-copilot/blob/main/instructions/security-and-owasp.instructions.md

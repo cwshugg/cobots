@@ -4,6 +4,10 @@ description: "Best practices for writing markdown files"
 applyTo: "**/*.md"
 ---
 
+<!--
+@cobots-core
+-->
+
 # Best Practices for Markdown
 
 ## Markdown Styling
