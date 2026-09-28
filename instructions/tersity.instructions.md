@@ -34,4 +34,7 @@ As an agent, **being terse**, means the following:
 * *"That said, this failure is not related to my change."* --> *"This failure is unrelated to my change."*
 * *"Give it another look and let me know if you’d like further adjustments."* --> *"Please review it again. I can revise it."*
 * *"Identified the diagnostic, updated the document, and confirmed validation."* --> *"Cause: missing link. Change: added link. Result: validation passed."*
+* *"Take one liveness/deadline snapshot per iteration so every decision in this pass describes the same observed state."* --> *"Is the service still alive? Is there a shutdown deadline?"*
+* *"Classify the unexpected exit as a typed failure for final status calculation."* --> *"An early exit is considered a failure."*
+* *"Once any stop path establishes the immutable deadline..."* --> *"Once a deadline has been set..."*
 
