@@ -30,11 +30,11 @@ may be hard-deleted.
 ```bash
 # Create a new entry (reads body from STDIN). Tags are a plain, space-
 # separated list (not an expression).
-echo "ntfy auth uses a token in the Authorization header." \
+echo "Bearer auth uses a token in the Authorization header." \
   | python knowledge-cli.py create \
-      --title "How ntfy authentication works" \
+      --title "How Bearer authentication works" \
       --author "lorey" \
-      --tags 'ntfy auth http'
+      --tags 'bearer auth http'
 
 # List all entries (sorted by creation time, ascending).
 python knowledge-cli.py list
@@ -232,9 +232,9 @@ Path:           /path/to/entry.knowledge.md
 ID:             abc123...
 Created:        2026-07-09 15:40:00
 Updated:        2026-07-09 15:40:00
-Title:          How ntfy authentication works
+Title:          How Bearer authentication works
 Author:         lorey
-Tags:           ntfy, auth, http
+Tags:           bearer, auth, http
 
 Contents:
   (the body text, with each line indented by 2 spaces)
@@ -253,22 +253,22 @@ python               5
 ## Example
 
 ```bash
-$ echo "ntfy auth uses a token in the Authorization header." \
+$ echo "Bearer auth uses a token in the Authorization header." \
     | python knowledge-cli.py create \
-        --title "How ntfy authentication works" \
+        --title "How Bearer authentication works" \
         --author "lorey" \
-        --tags 'ntfy auth http'
+        --tags 'bearer auth http'
 /home/user/my-project/.cobots/knowledge/4f9a1c7e0b3d5a62.knowledge.md
 
 $ python knowledge-cli.py list
-[4f9a1c7e0b3d5a62] [2026-07-09 15:40:00] (lorey) How ntfy authentication works #ntfy #auth #http
+[4f9a1c7e0b3d5a62] [2026-07-09 15:40:00] (lorey) How Bearer authentication works #bearer #auth #http
 
 $ python knowledge-cli.py query --tags 'auth and http' --regex 'token'
-[4f9a1c7e0b3d5a62] [2026-07-09 15:40:00] (lorey) How ntfy authentication works #ntfy #auth #http
+[4f9a1c7e0b3d5a62] [2026-07-09 15:40:00] (lorey) How Bearer authentication works #bearer #auth #http
 
 $ python knowledge-cli.py tags
 TAG    COUNT
 auth       1
 http       1
-ntfy       1
+bearer     1
 ```

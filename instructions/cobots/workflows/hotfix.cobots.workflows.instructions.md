@@ -29,7 +29,7 @@ Rapid-response workflow for critical production issues that require immediate at
 | 5 | Expedited Security Review | SecurityAnalyst | 3 | SecurityAnalyst performs a focused security review of the hotfix in parallel with Scrutinizer. Ensures the fix doesn't introduce new vulnerabilities and, if the incident was security-related, that the vulnerability is fully remediated. |
 | 6 | Address Critical Feedback | Developer | 4, 5 | Developer addresses only critical findings from both reviews. |
 | 7 | Post-Incident Report | Documenter | 6 | Documenter documents the incident — what happened, root cause, fix applied, timeline, and recommendations to prevent recurrence. Researcher assists by gathering data (task history, timelines, related reports). |
-| 8 | Final Notification | Director | 7 | Director notifies the human that the hotfix has been applied and the post-incident report is available. |
+| 8 | Final Update | Director | 7 | Director informs the human that the hotfix has been applied and the post-incident report is available. |
 
 ### Loops and Branches
 

@@ -107,16 +107,6 @@ They do so using **tasks**, **reports**, and **knowledge**:
 * [Cobots Knowledge CLI](skills/cobots_knowledge/) - A skill that creates and queries `*.knowledge.md` entries under a working directory.
     * Knowledge entries represent durable, reusable, tag-categorized knowledge that any agent can query, retrieve, edit, or delete.
     * Entries are discoverable by boolean tag expressions (e.g. `git and (rust or c)`) and/or a regex over their title and content.
-* [Cobots Ntfy CLI](skills/cobots_ntfy/) - A skill that uses [ntfy.sh](https://ntfy.sh) to send me notifications on agent progress, updates, questions, etc.
-    * By default, it is configured to run in "confidential" mode, meaning that only generic messages can be sent via [ntfy.sh](https://ntfy.sh) (such as "build finished", "waiting for input", etc.).
-
-### Monitoring
-
-* [Cobots TUI](skills/cobots_tui/) - An interactive TUI dashboard for the cobots workspace.
-    * Provides an interactive Textual TUI (default) and a `--show-overview` flag for a static Rich-formatted snapshot.
-    * Humans use the TUI to browse tasks and reports, view/edit items, and monitor workspace activity with auto-refresh.
-    * Use `python3 cobots-tui.py --show-overview` for a quick non-interactive snapshot.
-
 ### Utility Skills
 
 The following skills provide utility capabilities to agents:
@@ -136,4 +126,3 @@ A few useful resources that I've learned from:
 
 * [Awesome GitHub Copilot](https://awesome-copilot.github.com/) - A collection of agents, skills, instructions, etc.
 * [How to write a great `agents.md`](https://github.blog/ai-and-ml/github-copilot/how-to-write-a-great-agents-md-lessons-from-over-2500-repositories/)
-

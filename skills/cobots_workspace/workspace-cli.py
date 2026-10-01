@@ -29,7 +29,6 @@ from cobots_lib.workspace.constants import (
     TASKS_DIR_NAME,
     WORKING_DIR_NAME,
 )
-from cobots_lib.workspace.topic import generate_default_topic
 from cobots_lib.workspace.working_dir import resolve_config_path, resolve_working_dir
 
 
@@ -128,7 +127,6 @@ def main() -> int:
         # 2. Create or update the config file.
         if not already_exists:
             config = CobotsConfig(workspace_name=args.name)
-            config.ntfy.topic = generate_default_topic()
             config.write_file(config_path)
         elif args.name:
             # Update the workspace name if --name was explicitly provided

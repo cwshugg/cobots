@@ -121,23 +121,23 @@ class TestCreate(_KBTestCase):
         emitted by PyYAML rather than hand-quoted.
         """
         path = _create_entry(
-            self.workspace, "Ntfy Guide", "Lorey", "Ntfy AUTH http"
+            self.workspace, "API Guide", "Lorey", "Bearer AUTH http"
         )
         self.assertTrue(os.path.isfile(path))
         with open(path, "r", encoding="utf-8") as fh:
             text = fh.read()
-        self.assertIn("- ntfy", text)
+        self.assertIn("- bearer", text)
         self.assertIn("- auth", text)
         self.assertIn("- http", text)
-        self.assertIn("title: Ntfy Guide", text)
+        self.assertIn("title: API Guide", text)
         self.assertIn("author: lorey", text)
         # The H1 title is retained in the body.
-        self.assertIn("# Ntfy Guide", text)
+        self.assertIn("# API Guide", text)
         # Round-trips cleanly back into a well-formed entry.
         entry = knowledge_cli.KnowledgeEntry.from_file(path)
-        self.assertEqual(entry.title, "Ntfy Guide")
+        self.assertEqual(entry.title, "API Guide")
         self.assertEqual(entry.author, "lorey")
-        self.assertEqual(entry.tags, ["ntfy", "auth", "http"])
+        self.assertEqual(entry.tags, ["bearer", "auth", "http"])
 
     def test_invalid_tag_exits_2(self) -> None:
         """Rejects an invalid tag character with exit code 2."""

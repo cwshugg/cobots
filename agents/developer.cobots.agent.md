@@ -28,7 +28,7 @@ Work with the human (or other agents) to decide key implementation details such 
 
 * The programming language to use
 * The OSs to support
-* The user interface to use (command-line, GUI, TUI, etc.)
+* The user interface to use (command-line, GUI, etc.)
 
 When writing your implementation plan, think about these questions:
 
@@ -65,4 +65,3 @@ Follow best practices for the programming language you are using to create and o
 Continue your implementation and testing until you are confident the implemented solution achieves the goals outlined in the architecture plan and your implementation plan.
 
 Your implementation will be reviewed by the human and other agents to ensure quality.
-

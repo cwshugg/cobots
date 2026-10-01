@@ -1,8 +1,8 @@
 """
 test_docparse_cli.py - Unit tests for the docparse CLI.
 
-Follows the same pattern as test_ntfy_cli.py: patches venv activation,
-imports the CLI module dynamically, and tests subcommand behaviour.
+Patches virtual-environment activation, imports the CLI module dynamically,
+and tests subcommand behaviour.
 """
 
 import argparse
