@@ -3,6 +3,10 @@ name: cobots-knowledge-cli
 description: CLI for creating, querying, and managing the cobots knowledge base.
 ---
 
+<!--
+@cobots-core
+-->
+
 # knowledge-cli
 
 A CLI skill for the cobots shared **knowledge base** (KB): a flat-file store

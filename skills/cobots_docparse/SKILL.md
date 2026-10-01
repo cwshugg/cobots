@@ -3,6 +3,10 @@ name: cobots-docparse-cli
 description: CLI for converting documents into readable text (Markdown / plain text).
 ---
 
+<!--
+@cobots-core
+-->
+
 # docparse-cli
 
 A CLI skill for converting documents in a wide range of formats into readable text (Markdown preferred, plain text fallback).
